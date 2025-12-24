@@ -1,0 +1,12 @@
+{
+  "name": "heos2mqtt",
+  "version-string": "0.1.0",
+  "description": "Service that bridges HEOS CLI output to MQTT.",
+  "dependencies": [
+    "boost-asio",
+    "boost-json",
+    "boost-mqtt5",
+    "fmt",
+    "catch2"
+  ]
+}
