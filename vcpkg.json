@@ -6,6 +6,10 @@
     "boost-asio",
     "boost-json",
     "boost-mqtt5",
+    {
+      "name": "boost-stacktrace",
+      "features": ["backtrace"]
+    },
     "fmt",
     "catch2"
   ]
