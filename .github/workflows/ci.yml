@@ -17,6 +17,21 @@ jobs:
         with:
           submodules: true
 
+      - name: Prepare cache directories
+        run: |
+          mkdir -p ~/.cache/vcpkg/archives
+          mkdir -p build/ninja-multi/vcpkg_installed
+
+      - name: Cache vcpkg artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/vcpkg/archives
+            build/ninja-multi/vcpkg_installed
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'CMakePresets.json') }}
+          restore-keys: |
+            ${{ runner.os }}-vcpkg-
+
       - name: Install dependencies
         run: |
           sudo apt-get update
