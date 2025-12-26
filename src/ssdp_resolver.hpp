@@ -206,12 +206,11 @@ inline void ssdp_resolver::finish(const boost::system::error_code& ec, udp::endp
 
     auto handler = std::move(handler_);
     handler_ = {};
-    net::post(strand_, net::bind_allocator(net::get_associated_allocator(handler),
-                                           [handler = std::move(handler), ec, endpoint]() mutable {
-                                               if (handler) {
-                                                   handler(ec, endpoint);
-                                               }
-                                           }));
+    net::post(strand_, [handler = std::move(handler), ec, endpoint]() mutable {
+        if (handler) {
+            handler(ec, endpoint);
+        }
+    });
 }
 
 }  // namespace heos2mqtt
