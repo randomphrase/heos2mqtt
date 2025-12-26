@@ -2,6 +2,16 @@ cmake_minimum_required(VERSION 3.24)
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
+
+set(HEOS2MQTT_HAS_IO_URING OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  find_library(HEOS2MQTT_LIBURING NAMES uring)
+  if(HEOS2MQTT_LIBURING)
+    set(HEOS2MQTT_HAS_IO_URING ON)
+  else()
+    message(FATAL_ERROR "liburing is required on Linux builds to enable io_uring support.")
+  endif()
+endif()
 project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -45,6 +55,10 @@ target_link_libraries(heos_client
         fmt::fmt
         Threads::Threads
 )
+if(HEOS2MQTT_HAS_IO_URING)
+  target_link_libraries(heos_client PUBLIC ${HEOS2MQTT_LIBURING})
+  target_compile_definitions(heos_client PUBLIC BOOST_ASIO_HAS_IO_URING=1)
+endif()
 
 add_library(mqtt_publisher STATIC
     src/mqtt_publisher.cpp
