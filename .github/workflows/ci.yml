@@ -20,7 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build g++
+          sudo apt-get install -y ninja-build g++ liburing-dev
 
       - name: Configure (CMake + vcpkg)
         run: cmake --preset ninja-multi -DVCPKG_TARGET_TRIPLET=x64-linux
