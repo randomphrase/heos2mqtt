@@ -13,9 +13,6 @@
       "binaryDir": "build/ninja-multi",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/external/vcpkg/scripts/buildsystems/vcpkg.cmake",
-        "VCPKG_TARGET_TRIPLET": "arm64-osx",
-        "CMAKE_OSX_ARCHITECTURES": "arm64",
-        "CMAKE_CXX_COMPILER": "/usr/bin/clang++",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
       }
     }
