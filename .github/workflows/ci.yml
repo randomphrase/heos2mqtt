@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - master
+  pull_request:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build g++
+
+      - name: Configure (CMake + vcpkg)
+        run: cmake --preset ninja-multi -DVCPKG_TARGET_TRIPLET=x64-linux
+
+      - name: Build (Debug)
+        run: cmake --build --preset ninja-multi-debug
+
+      - name: Run tests
+        run: ctest --preset ninja-multi-tests
+        env:
+          CTEST_OUTPUT_ON_FAILURE: 1
+
+      - name: Upload CTest logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ctest-logs
+          path: build/ninja-multi/Testing
+          if-no-files-found: ignore
