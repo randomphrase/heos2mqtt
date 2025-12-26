@@ -29,9 +29,13 @@ jobs:
         run: cmake --build --preset ninja-multi-debug
 
       - name: Run tests
-        run: ctest --preset ninja-multi-tests
+        run: ctest --preset ninja-multi-tests --output-on-failure
         env:
           CTEST_OUTPUT_ON_FAILURE: 1
+
+      - name: Submit to CDash
+        working-directory: build/ninja-multi
+        run: ctest -C Debug -T Submit
 
       - name: Upload CTest logs
         if: always()
