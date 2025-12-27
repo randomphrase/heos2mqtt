@@ -40,15 +40,20 @@ public:
         outbound_interface_ = std::move(iface);
     }
 
-    template <typename CompletionToken>
+    template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
     auto async_resolve(std::string search_target,
-                       std::chrono::steady_clock::duration timeout,
-                       CompletionToken&& token);
+      std::chrono::steady_clock::duration timeout,
+      CompletionToken&& token) {
+      return net::async_initiate<CompletionToken, void(boost::system::error_code, udp::endpoint)>(
+        [this, search_target = std::move(search_target), timeout](auto&& handler) mutable {
+          this->begin_resolve(std::move(search_target), timeout, std::forward<decltype(handler)>(handler));
+        },
+        token);
+    }
 
-    template <typename CompletionToken>
+    template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
     auto async_resolve(std::string search_target, CompletionToken&& token) {
-        return async_resolve(std::move(search_target), std::chrono::seconds(3),
-                             std::forward<CompletionToken>(token));
+      return async_resolve(std::move(search_target), std::chrono::seconds(3), std::forward<CompletionToken>(token));
     }
 
 private:
@@ -75,17 +80,6 @@ private:
     std::optional<net::ip::address_v4> outbound_interface_;
     bool resolving_{false};
 };
-
-template <typename CompletionToken>
-auto ssdp_resolver::async_resolve(std::string search_target,
-                                  std::chrono::steady_clock::duration timeout,
-                                  CompletionToken&& token) {
-    return net::async_initiate<CompletionToken, void(boost::system::error_code, udp::endpoint)>(
-        [this, search_target = std::move(search_target), timeout](auto&& handler) mutable {
-            this->begin_resolve(std::move(search_target), timeout, std::forward<decltype(handler)>(handler));
-        },
-        token);
-}
 
 template <typename Handler>
 void ssdp_resolver::begin_resolve(std::string search_target,
