@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 3.24)
+project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
+
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
@@ -12,7 +14,6 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
     message(FATAL_ERROR "liburing is required on Linux builds to enable io_uring support.")
   endif()
 endif()
-project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)

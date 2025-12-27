@@ -6,7 +6,12 @@ heos2mqtt bridges Denon/Marantz HEOS CLI output to MQTT so that downstream servi
 - CMake 3.24+
 - Ninja (Multi-Config)
 - vcpkg (manifest mode); set `VCPKG_ROOT` or pass `-DVCPKG_ROOT` when configuring
-- Clang 17 (the default macOS clang++ works on Sonoma/Xcode 15)
+- At least clang 17 (the default macOS clang++ on Tahoe or later) or GCC equivalent on recent linux
+
+On Debian:
+- autotools, libtool (both needed to build libbacktrace)
+- liburing-dev
+
 
 ## Build & Test
 ```bash
