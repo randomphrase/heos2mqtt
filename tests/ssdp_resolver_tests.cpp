@@ -1,4 +1,5 @@
 #include "ssdp_resolver.hpp"
+#include "expect_calls.hpp"
 
 #include <boost/asio.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -59,18 +60,12 @@ TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
 
     heos2mqtt::ssdp_resolver resolver(io, {boost::asio::ip::address_v4::loopback(), listen_port});
 
-    std::optional<boost::system::error_code> result_ec;
-    std::optional<boost::asio::ip::udp::endpoint> result_endpoint;
 
     resolver.async_resolve("urn:schemas-denon-com:device:ACT-Denon:1", 1s,
-                           [&](const boost::system::error_code& ec, boost::asio::ip::udp::endpoint ep) {
-        result_ec = ec;
-        result_endpoint = ep;
-    });
+      test::expect_calls(1, [&](const boost::system::error_code& ec, boost::asio::ip::udp::endpoint ep) {
+        CHECK_FALSE(ec.failed());
+        CHECK(ep.port() > 0);
+      }));
 
-    REQUIRE(run_until(io, 3s, [&]() { return result_ec.has_value(); }));
-    REQUIRE(result_ec);
-    REQUIRE_FALSE(result_ec->failed());
-    REQUIRE(result_endpoint);
-    REQUIRE(result_endpoint->port() > 0);
+    io.run_for(5s);
 }
