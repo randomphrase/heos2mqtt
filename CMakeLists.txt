@@ -1,19 +1,9 @@
 cmake_minimum_required(VERSION 3.24)
-project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
-
 if(POLICY CMP0167)
   cmake_policy(SET CMP0167 NEW)
 endif()
 
-set(HEOS2MQTT_HAS_IO_URING OFF)
-if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
-  find_library(HEOS2MQTT_LIBURING NAMES uring)
-  if(HEOS2MQTT_LIBURING)
-    set(HEOS2MQTT_HAS_IO_URING ON)
-  else()
-    message(FATAL_ERROR "liburing is required on Linux builds to enable io_uring support.")
-  endif()
-endif()
+project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -24,6 +14,7 @@ if(CMAKE_EXPORT_COMPILE_COMMANDS)
     ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
 endif()
 
+# TODO: move this into the build pipeline and/or preset
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   set(DEBUG_SANITIZER_FLAGS "-fsanitize=address,undefined")
   add_compile_options("$<$<CONFIG:Debug>:${DEBUG_SANITIZER_FLAGS}>")
@@ -42,6 +33,16 @@ endif()
 find_package(fmt CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(Threads REQUIRED)
+
+set(HEOS2MQTT_HAS_IO_URING OFF)
+if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+  find_library(HEOS2MQTT_LIBURING NAMES uring)
+  if(HEOS2MQTT_LIBURING)
+    set(HEOS2MQTT_HAS_IO_URING ON)
+  else()
+    message(FATAL_ERROR "liburing is required on Linux builds to enable io_uring support.")
+  endif()
+endif()
 
 add_library(heos_client STATIC
     src/heos_client.cpp
