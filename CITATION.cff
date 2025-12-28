@@ -1,0 +1,28 @@
+cff-version: 1.2.0
+title: heos2mqtt
+message: If you use this software, please cite it as below.
+type: software
+
+authors:
+  - family-names: Rankine
+    given-names: Alastair
+    email: alastair@girtby.net
+
+license: Apache-2.0
+repository-code: https://github.com/randomphrase/heos2mqtt
+
+ai-assisted-development:
+  used: true
+  tools:
+    - name: Codex AI
+      role: code-generation
+      extent: partial
+  human-review:
+    required: true
+    statement: >
+      All AI-assisted contributions are reviewed and approved by the
+      human maintainer prior to inclusion.
+
+# Local Variables:
+# mode: yaml
+# End:

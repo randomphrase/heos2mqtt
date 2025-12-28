@@ -45,3 +45,22 @@ CMakeLists.txt     # build graph
 CMakePresets.json  # Ninja Multi-Config presets
 docker/            # Mosquitto docker-compose and config
 ```
+
+## License
+
+This project is licensed under the Apache License, Version 2.0.
+See the LICENSE file for details.
+
+## Authorship and AI assistance
+
+All source code in this repository is authored and maintained by:
+
+Alastair Rankine <alastair@girtby.net>
+
+AI-assisted development tools (including Codex AI) were used during
+implementation for tasks such as code generation and refactoring.
+All AI-generated contributions are reviewed, modified where necessary,
+and approved by a human maintainer prior to inclusion.
+
+The human maintainer retains full responsibility for the correctness,
+licensing, and authorship of all code in this repository.
