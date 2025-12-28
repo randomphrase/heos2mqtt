@@ -11,6 +11,9 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
 
+    env:
+      CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -28,7 +31,7 @@ jobs:
           path: |
             ~/.cache/vcpkg/archives
             build/ninja-multi/vcpkg_installed
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json', 'CMakePresets.json') }}
+          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
             ${{ runner.os }}-vcpkg-
 
@@ -37,25 +40,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y ninja-build g++ liburing-dev
 
-      - name: Configure (CMake + vcpkg)
-        run: cmake --preset ninja-multi -DVCPKG_TARGET_TRIPLET=x64-linux
+      - name: Setup CMake
+        uses: jwlawson/actions-setup-cmake@v2
 
-      - name: Build (Debug)
-        run: cmake --build --preset ninja-multi-debug
-
-      - name: Run tests
-        run: ctest --preset ninja-multi-tests --output-on-failure
-        env:
-          CTEST_OUTPUT_ON_FAILURE: 1
-
-      - name: Submit to CDash
-        working-directory: build/ninja-multi
-        run: ctest -C Debug -T Submit
-
-      - name: Upload CTest logs
-        if: always()
-        uses: actions/upload-artifact@v4
+      - name: Dashboard Build
+        uses: chorse-dev/cmake-action@master
         with:
-          name: ctest-logs
-          path: build/ninja-multi/Testing
-          if-no-files-found: ignore
+          # build-name: ${{ matrix.conf.build-name }}
+          # change-id: ${{ steps.checkout.outputs.commit }}
+          # config-options: ${{ matrix.conf.config-options }}
+          # coverage-command: ${{ matrix.conf.coverage-command }}
+          # memorycheck-command: ${{ matrix.conf.memorycheck-command }}
+          # memorycheck-type: ${{ matrix.conf.memorycheck-type }}
+          submit-url: "https://my.cdash.org/submit.php?project=heos2mqtt"
