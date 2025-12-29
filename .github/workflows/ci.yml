@@ -9,10 +9,31 @@ on:
 
 jobs:
   build-and-test:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        conf:
+          - build-name: ASan
+            memorycheck-type: AddressSanitizer
+            env:
+              CXXFLAGS: -fno-omit-frame-pointer -fsanitize=address
+
+          - build-name: Coverage
+            coverage-command: gcov
+            env:
+              CXXFLAGS: --coverage
+
+        platform:
+          - name: Ubuntu x86
+            runs-on: ubuntu-24.04
+          - name: Ubuntu ARM
+            runs-on: ubuntu-24.04-arm
+          #- macos-26
 
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
+
+    name: ${{ matrix.platform.name }} ${{ matrix.conf.build-name }}
+    runs-on: ${{ matrix.platform.runs-on }}
 
     steps:
       - name: Checkout repository
@@ -31,25 +52,29 @@ jobs:
           path: |
             ~/.cache/vcpkg/archives
             build/ninja-multi/vcpkg_installed
-          key: ${{ runner.os }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-vcpkg-${{ hashFiles('vcpkg.json') }}
           restore-keys: |
-            ${{ runner.os }}-vcpkg-
+            ${{ runner.os }}-${{ runner.arch }}-vcpkg-
 
       - name: Install dependencies
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y ninja-build g++ liburing-dev
 
       - name: Setup CMake
-        uses: jwlawson/actions-setup-cmake@v2
+        uses: tomjakubowski/actions-setup-cmake@aarch64
+        # TODO above fork contains fix for ARM, use jwlawson/actions-setup-cmake once merged
+        env: ${{ matrix.conf.env }}
 
       - name: Dashboard Build
         uses: chorse-dev/cmake-action@master
         with:
-          # build-name: ${{ matrix.conf.build-name }}
+          build-name: ${{ matrix.conf.build-name }}
           # change-id: ${{ steps.checkout.outputs.commit }}
           # config-options: ${{ matrix.conf.config-options }}
-          # coverage-command: ${{ matrix.conf.coverage-command }}
+          coverage-command: ${{ matrix.conf.coverage-command }}
           # memorycheck-command: ${{ matrix.conf.memorycheck-command }}
-          # memorycheck-type: ${{ matrix.conf.memorycheck-type }}
+          memorycheck-type: ${{ matrix.conf.memorycheck-type }}
           submit-url: "https://my.cdash.org/submit.php?project=heos2mqtt"
+        env: ${{ matrix.conf.env }}
