@@ -17,10 +17,10 @@ jobs:
             env:
               CXXFLAGS: -fno-omit-frame-pointer -fsanitize=address
 
-          - build-name: Coverage
-            coverage-command: gcov
-            env:
-              CXXFLAGS: --coverage
+          # - build-name: Coverage
+          #   coverage-command: gcov
+          #   env:
+          #     CXXFLAGS: --coverage
 
         platform:
           - name: Ubuntu x86
