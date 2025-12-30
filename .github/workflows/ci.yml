@@ -70,7 +70,7 @@ jobs:
       - name: Dashboard Build
         uses: chorse-dev/cmake-action@master
         with:
-          build-name: ${{ matrix.conf.build-name }}
+          build-name: ${{ matrix.platform.name }} ${{ matrix.conf.build-name }}
           # change-id: ${{ steps.checkout.outputs.commit }}
           # config-options: ${{ matrix.conf.config-options }}
           coverage-command: ${{ matrix.conf.coverage-command }}
