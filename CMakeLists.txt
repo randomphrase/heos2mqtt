@@ -8,19 +8,11 @@ project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 if(CMAKE_EXPORT_COMPILE_COMMANDS)
   set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
     ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-endif()
-
-# TODO: move this into the build pipeline and/or preset
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(DEBUG_SANITIZER_FLAGS "-fsanitize=address,undefined")
-  add_compile_options("$<$<CONFIG:Debug>:${DEBUG_SANITIZER_FLAGS}>")
-  add_link_options("$<$<CONFIG:Debug>:${DEBUG_SANITIZER_FLAGS}>")
-  add_compile_options("$<$<CONFIG:Debug>:-fno-omit-frame-pointer>")
-  add_compile_options("$<$<CONFIG:Debug>:-fno-sanitize-recover=all>")
 endif()
 
 find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5 stacktrace_backtrace)
