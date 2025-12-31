@@ -14,13 +14,11 @@ jobs:
         conf:
           - build-name: ASan
             memorycheck-type: AddressSanitizer
-            env:
-              CXXFLAGS: -fno-omit-frame-pointer -fsanitize=address
+            cxxflags: -fno-omit-frame-pointer -fsanitize=address
 
           # - build-name: Coverage
           #   coverage-command: gcov
-          #   env:
-          #     CXXFLAGS: --coverage
+          #   cxxflags: --coverage
 
         platform:
           - name: Ubuntu x86
@@ -31,6 +29,7 @@ jobs:
 
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
+      CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.conf.cxxflags }}
 
     name: ${{ matrix.platform.name }} ${{ matrix.conf.build-name }}
     runs-on: ${{ matrix.platform.runs-on }}
@@ -65,7 +64,6 @@ jobs:
       - name: Setup CMake
         uses: tomjakubowski/actions-setup-cmake@aarch64
         # TODO above fork contains fix for ARM, use jwlawson/actions-setup-cmake once merged
-        env: ${{ matrix.conf.env }}
 
       - name: Dashboard Build
         uses: chorse-dev/cmake-action@master
@@ -77,4 +75,3 @@ jobs:
           # memorycheck-command: ${{ matrix.conf.memorycheck-command }}
           memorycheck-type: ${{ matrix.conf.memorycheck-type }}
           submit-url: "https://my.cdash.org/submit.php?project=heos2mqtt"
-        env: ${{ matrix.conf.env }}
