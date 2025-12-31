@@ -1,5 +1,5 @@
 #include "heos_client.hpp"
-#include "logging.hpp"
+#include "logging/logging.hpp"
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/read_until.hpp>

@@ -1,10 +1,11 @@
 #pragma once
 
-#include <fmt/chrono.h>
 #include <fmt/core.h>
 
 #include <chrono>
+#include <cstdint>
 #include <source_location>
+#include <ostream>
 #include <string>
 #include <string_view>
 #include <utility>
@@ -29,10 +30,10 @@ template <> struct formatter<logging::severity>: formatter<string_view> {
     -> format_context::iterator {
         using enum logging::severity;
         switch (s) {
-        case debug: return base::format("debug", ctx);
-        case info: return base::format("info", ctx);
-        case warning: return base::format("warning", ctx);
-        case error: return base::format("error", ctx);
+        case debug: return base::format("DBG", ctx);
+        case info: return base::format("INF", ctx);
+        case warning: return base::format("WRN", ctx);
+        case error: return base::format("ERR", ctx);
         }
         __builtin_unreachable();
         //std::unreachable();
@@ -46,27 +47,12 @@ class log_record {
 public:
     log_record(severity level,
                std::string message,
-               std::source_location location)
-        : level_(level),
-          timestamp_(clock::now()),
-          message_(std::move(message)),
-          location_(location) {}
+               std::source_location location);
 
-    [[nodiscard]] severity level() const {
-        return level_;
-    }
-
-    [[nodiscard]] clock::time_point timestamp() const {
-        return timestamp_;
-    }
-
-    [[nodiscard]] std::string_view message() const {
-        return message_;
-    }
-
-    [[nodiscard]] const std::source_location& location() const {
-        return location_;
-    }
+    [[nodiscard]] severity level() const;
+    [[nodiscard]] clock::time_point timestamp() const;
+    [[nodiscard]] std::string_view message() const;
+    [[nodiscard]] const std::source_location& location() const;
 
 private:
     severity level_;
@@ -75,29 +61,30 @@ private:
     std::source_location location_;
 };
 
-inline void emit(const log_record& record) {
-    fmt::print(
-        "{:%T} [{}] {}:{} - {}\n",
-        record.timestamp(),
-        record.level(),
-        record.location().file_name(),
-        record.location().line(),
-        record.message());
-}
+class logger {
+public:
+    static logger& instance();
+    void set_stream(std::ostream& stream);
+    void emit(const log_record& record);
+
+private:
+    logger();
+
+    std::ostream* stream_{};
+};
 
 template <severity Level, typename... Args>
 class log_line {
 public:
     explicit log_line(fmt::format_string<Args...> format, Args&&... args,
         std::source_location location = std::source_location::current())
-    : record_(Level,
-        fmt::format(format, std::forward<Args>(args)...),
-        location)
     {
-        emit(record_);
+        log_record record {
+            Level,
+            fmt::format(format, std::forward<Args>(args)...),
+            location};
+        logger::instance().emit(record);
     }
-private:
-    log_record record_;
 };
 
 template <typename... Args>

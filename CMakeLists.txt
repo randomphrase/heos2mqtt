@@ -36,6 +36,22 @@ if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   endif()
 endif()
 
+add_library(logging STATIC
+    src/logging/logging.cpp
+)
+target_include_directories(logging PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(logging PUBLIC fmt::fmt)
+add_executable(logging_tests
+    tests/logging_tests.cpp
+)
+target_link_libraries(logging_tests PRIVATE
+  logging
+  Catch2::Catch2WithMain
+)
+
 add_library(heos_client STATIC
     src/heos_client.cpp
 )
@@ -46,6 +62,7 @@ target_include_directories(heos_client PUBLIC
 target_link_libraries(heos_client
     PUBLIC
         Boost::headers
+        logging
         fmt::fmt
         Threads::Threads
 )
@@ -69,6 +86,7 @@ target_link_libraries(mqtt_publisher
         Threads::Threads
 )
 
+
 add_executable(heos2mqtt
     src/main.cpp
 )
@@ -77,6 +95,7 @@ target_link_libraries(heos2mqtt PRIVATE heos_client mqtt_publisher)
 add_executable(heos_client_tests
     tests/catch_exception_stacktrace.cpp
     tests/heos_client_tests.cpp
+    tests/logging_tests.cpp
     tests/ssdp_resolver_tests.cpp
 )
 target_link_libraries(heos_client_tests
@@ -85,7 +104,7 @@ target_link_libraries(heos_client_tests
         Catch2::Catch2WithMain
         Boost::headers
         Boost::stacktrace_backtrace
-        fmt::fmt
+        logging
 )
 if(TARGET Boost::stacktrace_from_exception)
     target_link_libraries(heos_client_tests PRIVATE Boost::stacktrace_from_exception)
