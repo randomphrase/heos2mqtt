@@ -120,7 +120,7 @@ void mqtt_publisher::publish_raw(std::string line) {
             build_topic("raw"), std::move(serialized), mqtt::retain_e::no, props,
             boost::asio::bind_executor(
                 strand_,
-                [this](mqtt::error_code ec, mqtt::reason_code rc, mqtt::puback_props) {
+                [](mqtt::error_code ec, mqtt::reason_code rc, mqtt::puback_props) {
                     if (ec) {
                         fmt::print(stderr, "MQTT: publish error: {} ({})\n", ec.message(), rc.message());
                     }

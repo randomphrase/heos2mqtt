@@ -17,8 +17,7 @@ heos_client::heos_client(boost::asio::io_context& io,
                          std::string host,
                          std::string port,
                          line_handler handler)
-    : io_(io),
-      strand_(boost::asio::make_strand(io)),
+    : strand_(boost::asio::make_strand(io)),
       resolver_(io),
       socket_(io),
       reconnect_timer_(io),
@@ -114,7 +113,7 @@ void heos_client::start_read() {
     boost::asio::async_read_until(
         socket_, read_buffer_, '\n',
         boost::asio::bind_executor(
-            strand_, [this](const boost::system::error_code& ec, std::size_t bytes_transferred) {
+            strand_, [this](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
                 if (stopping_) {
                     return;
                 }
