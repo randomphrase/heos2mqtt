@@ -10,29 +10,28 @@ on:
 jobs:
   build-and-test:
     strategy:
+      fail-fast: false
       matrix:
-        conf:
-          - build-name: ASan
+        include:
+          - name: ASan Ubuntu x86
+            runs-on: ubuntu-24.04
             memorycheck-type: AddressSanitizer
             cxxflags: -fno-omit-frame-pointer -fsanitize=address
-
-          # - build-name: Coverage
-          #   coverage-command: gcov
-          #   cxxflags: --coverage
-
-        platform:
-          - name: Ubuntu x86
-            runs-on: ubuntu-24.04
-          - name: Ubuntu ARM
+          - name: UBSan Ubuntu ARM
             runs-on: ubuntu-24.04-arm
-          #- macos-26
+            memorycheck-type: UndefinedBehaviorSanitizer
+            cxxflags: -fno-omit-frame-pointer -fsanitize=undefined
+          - name: Clang Tidy
+            runs-on: ubuntu-24.04
+            config-options: -DCMAKE_CXX_CLANG_TIDY=clang-tidy
+            dependencies: clang
 
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.conf.cxxflags }}
+      CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.cxxflags }}
 
-    name: ${{ matrix.platform.name }} ${{ matrix.conf.build-name }}
-    runs-on: ${{ matrix.platform.runs-on }}
+    name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
 
     steps:
       - name: Checkout repository
@@ -51,7 +50,7 @@ jobs:
           path: |
             ~/.cache/vcpkg/archives
             build/ninja-multi/vcpkg_installed
-          key: ${{ runner.os }}-${{ runner.arch }}-vcpkg-${{ hashFiles('vcpkg.json') }}
+          key: ${{ runner.os }}-${{ runner.arch }}-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ matrix.cxxflags }}
           restore-keys: |
             ${{ runner.os }}-${{ runner.arch }}-vcpkg-
 
@@ -59,7 +58,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build g++ liburing-dev
+          sudo apt-get install -y ninja-build g++ liburing-dev ${{ matrix.dependencies }}
 
       - name: Setup CMake
         uses: tomjakubowski/actions-setup-cmake@aarch64
@@ -68,10 +67,10 @@ jobs:
       - name: Dashboard Build
         uses: chorse-dev/cmake-action@master
         with:
-          build-name: ${{ matrix.platform.name }} ${{ matrix.conf.build-name }}
+          build-name: ${{ matrix.name }}
           # change-id: ${{ steps.checkout.outputs.commit }}
-          # config-options: ${{ matrix.conf.config-options }}
-          coverage-command: ${{ matrix.conf.coverage-command }}
+          config-options: ${{ matrix.config-options }}
+          coverage-command: ${{ matrix.coverage-command }}
           # memorycheck-command: ${{ matrix.conf.memorycheck-command }}
-          memorycheck-type: ${{ matrix.conf.memorycheck-type }}
+          memorycheck-type: ${{ matrix.memorycheck-type }}
           submit-url: "https://my.cdash.org/submit.php?project=heos2mqtt"
