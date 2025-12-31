@@ -12,7 +12,8 @@ Checks: >
   -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
-  -readability-identifier-length
+  -readability-identifier-length,
+  -readability-implicit-bool-conversion
 HeaderFilterRegex: '.*(src|tests)/.*'
 WarningsAsErrors: ''
 FormatStyle: file
