@@ -1,4 +1,5 @@
 #include "heos_client.hpp"
+#include "logging.hpp"
 
 #include <boost/asio/connect.hpp>
 #include <boost/asio/read_until.hpp>
@@ -12,6 +13,7 @@
 namespace heos2mqtt {
 
 using namespace std::chrono_literals;
+using namespace logging;
 
 heos_client::heos_client(boost::asio::io_context& io,
                          std::string host,
@@ -23,7 +25,10 @@ heos_client::heos_client(boost::asio::io_context& io,
       reconnect_timer_(io),
       host_(std::move(host)),
       port_(std::move(port)),
-      handler_(std::move(handler)) {}
+      handler_(std::move(handler)) {
+
+    info("HEOS client created for {}:{}", host_, port_);
+}
 
 void heos_client::start() {
     boost::asio::dispatch(strand_, [this]() {
