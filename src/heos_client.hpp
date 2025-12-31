@@ -29,7 +29,6 @@ private:
     void schedule_reconnect();
     void close_socket();
 
-    boost::asio::io_context& io_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::ip::tcp::resolver resolver_;
     boost::asio::ip::tcp::socket socket_;

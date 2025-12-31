@@ -1,5 +1,7 @@
 #include "heos_client.hpp"
 
+#include "run_until.hpp"
+
 #include <boost/asio.hpp>
 #include <catch2/catch_test_macros.hpp>
 #include <fmt/core.h>
@@ -7,7 +9,6 @@
 #include <chrono>
 #include <deque>
 #include <string>
-#include <thread>
 #include <vector>
 
 using namespace std::chrono_literals;
@@ -16,32 +17,15 @@ namespace {
 
 using clock_type = std::chrono::steady_clock;
 
-template <typename Predicate>
-bool run_until(boost::asio::io_context& io,
-               clock_type::duration timeout,
-               Predicate predicate) {
-    auto deadline = clock_type::now() + timeout;
-    while (clock_type::now() < deadline) {
-        if (predicate()) {
-            return true;
-        }
-        if (io.poll_one() == 0) {
-            std::this_thread::sleep_for(1ms);
-        }
-    }
-    return predicate();
-}
-
 void run_for(boost::asio::io_context& io, clock_type::duration duration) {
     auto end = clock_type::now() + duration;
-    run_until(io, duration, [&]() { return clock_type::now() >= end; });
+    test::run_until(io, duration, [&]() { return clock_type::now() >= end; });
 }
 
 class mock_heos_server {
 public:
     mock_heos_server(boost::asio::io_context& io, std::uint16_t port)
-        : io_(io),
-          acceptor_(io, {boost::asio::ip::tcp::v4(), port}) {}
+        : acceptor_(io, {boost::asio::ip::tcp::v4(), port}) {}
 
     struct batch {
         std::vector<std::string> lines;
@@ -114,7 +98,6 @@ private:
             });
     }
 
-    boost::asio::io_context& io_;
     boost::asio::ip::tcp::acceptor acceptor_;
     std::unique_ptr<boost::asio::ip::tcp::socket> socket_;
     std::deque<batch> batches_;
@@ -138,7 +121,7 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
 
-    REQUIRE(run_until(io, 500ms, [&]() {
+    REQUIRE(test::run_until(io, 500ms, [&]() {
         return received.size() == 3;
     }));
 
@@ -166,7 +149,7 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
 
-    REQUIRE(run_until(io, 4s, [&]() {
+    REQUIRE(test::run_until(io, 4s, [&]() {
         return received.size() == 2;
     }));
 
