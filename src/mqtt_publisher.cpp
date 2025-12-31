@@ -30,9 +30,9 @@ std::string current_iso_timestamp() {
     std::time_t t = std::chrono::system_clock::to_time_t(now);
     std::tm tm{};
     gmtime_r(&t, &tm);
-    char buffer[64];
-    std::strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%SZ", &tm);
-    return buffer;
+    std::array<char, 64> buffer; // NOLINT(cppcoreguidelines-pro-type-member-init)
+    std::strftime(buffer.begin(), buffer.size(), "%Y-%m-%dT%H:%M:%SZ", &tm);
+    return buffer.data();
 }
 
 }  // namespace
@@ -62,13 +62,14 @@ mqtt_publisher::mqtt_publisher(boost::asio::io_context& io,
                                std::string host,
                                std::string port,
                                std::string base_topic)
-    : io_(io),
-      strand_(boost::asio::make_strand(io)),
+    : strand_(boost::asio::make_strand(io)),
       host_(std::move(host)),
       port_(std::move(port)),
       base_topic_(std::move(base_topic)),
       client_id_(fmt::format("heos2mqtt-{}", random_id())),
-      reconnect_timer_(io) {}
+      reconnect_timer_(io),
+      client_(io, std::monostate{}, detail::mqtt_logger(*this))
+{}
 
 void mqtt_publisher::start() {
     boost::asio::dispatch(strand_, [this]() {
@@ -90,24 +91,21 @@ void mqtt_publisher::stop() {
         running_ = false;
         reconnect_timer_.cancel();
         connected_ = false;
-        if (client_) {
-            client_->async_disconnect(
-                mqtt::disconnect_rc_e::normal_disconnection,
-                mqtt::disconnect_props{},
-                boost::asio::bind_executor(
-                    strand_, [this](mqtt::error_code ec) {
-                        if (ec && ec != boost::asio::error::operation_aborted) {
-                            fmt::print(stderr, "MQTT: disconnect error: {}\n", ec.message());
-                        }
-                        client_.reset();
-                    }));
-        }
+        client_.async_disconnect(
+            mqtt::disconnect_rc_e::normal_disconnection,
+            mqtt::disconnect_props{},
+            boost::asio::bind_executor(
+                strand_, [](mqtt::error_code ec) {
+                if (ec && ec != boost::asio::error::operation_aborted) {
+                    fmt::print(stderr, "MQTT: disconnect error: {}\n", ec.message());
+                }
+            }));
     });
 }
 
 void mqtt_publisher::publish_raw(std::string line) {
     boost::asio::dispatch(strand_, [this, line = std::move(line)]() {
-        if (!connected_ || !client_) {
+        if (!connected_) {
             return;
         }
         boost::json::object payload{
@@ -116,7 +114,7 @@ void mqtt_publisher::publish_raw(std::string line) {
         };
         auto serialized = boost::json::serialize(payload);
         mqtt::publish_props props;
-        client_->async_publish<mqtt::qos_e::at_least_once>(
+        client_.async_publish<mqtt::qos_e::at_least_once>(
             build_topic("raw"), std::move(serialized), mqtt::retain_e::no, props,
             boost::asio::bind_executor(
                 strand_,
@@ -129,21 +127,14 @@ void mqtt_publisher::publish_raw(std::string line) {
 }
 
 void mqtt_publisher::ensure_client() {
-    if (client_) {
-        return;
-    }
-    client_.emplace(io_, std::monostate{}, detail::mqtt_logger(*this));
-    client_->brokers(fmt::format("{}:{}", host_, port_), default_port());
-    client_->credentials(client_id_);
-    client_->keep_alive(30);
+    client_.brokers(fmt::format("{}:{}", host_, port_), default_port());
+    client_.credentials(client_id_);
+    client_.keep_alive(30);
 }
 
 void mqtt_publisher::run_client() {
-    if (!client_) {
-        return;
-    }
     fmt::print("MQTT: starting client run to {}:{}\n", host_, port_);
-    client_->async_run(boost::asio::bind_executor(
+    client_.async_run(boost::asio::bind_executor(
         strand_, [this](mqtt::error_code ec) { handle_run_complete(ec); }));
 }
 
@@ -157,7 +148,6 @@ void mqtt_publisher::handle_run_complete(mqtt::error_code ec) {
         return;
     }
     fmt::print(stderr, "MQTT: client run ended ({})\n", ec.message());
-    client_.reset();
     schedule_restart();
 }
 
@@ -172,7 +162,6 @@ void mqtt_publisher::schedule_restart() {
     reconnect_timer_.async_wait(boost::asio::bind_executor(
         strand_, [this](const boost::system::error_code& ec) {
             if (!ec && running_) {
-                client_.reset();
                 ensure_client();
                 run_client();
             }
@@ -218,12 +207,9 @@ void mqtt_publisher::handle_transport_error(mqtt::error_code ec) {
 }
 
 std::uint16_t mqtt_publisher::default_port() const {
-    try {
-        auto value = std::stoi(port_);
-        if (value >= 0 && value <= std::numeric_limits<std::uint16_t>::max()) {
-            return static_cast<std::uint16_t>(value);
-        }
-    } catch (const std::exception&) {
+    auto value = std::stoi(port_);
+    if (value >= 0 && value <= std::numeric_limits<std::uint16_t>::max()) {
+        return static_cast<std::uint16_t>(value);
     }
     return 1883;
 }

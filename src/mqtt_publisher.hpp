@@ -55,17 +55,16 @@ private:
     void handle_connack(mqtt::reason_code rc, bool session_present, const mqtt::connack_props& props);
     void handle_disconnect_notice(mqtt::reason_code rc, const mqtt::disconnect_props& props);
     void handle_transport_error(mqtt::error_code ec);
-    std::uint16_t default_port() const;
-    std::string build_topic(const std::string& suffix) const;
+    [[nodiscard]] std::uint16_t default_port() const;
+    [[nodiscard]] std::string build_topic(const std::string& suffix) const;
 
-    boost::asio::io_context& io_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::string host_;
     std::string port_;
     std::string base_topic_;
     std::string client_id_;
     boost::asio::steady_timer reconnect_timer_;
-    std::optional<client_type> client_;
+    client_type client_;
     bool running_{false};
     bool connected_{false};
     bool stopping_{false};
