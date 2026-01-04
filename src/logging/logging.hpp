@@ -53,6 +53,7 @@ public:
     [[nodiscard]] clock::time_point timestamp() const;
     [[nodiscard]] std::string_view message() const;
     [[nodiscard]] const std::source_location& location() const;
+    [[nodiscard]] std::string_view source_file() const;
 
 private:
     severity level_;

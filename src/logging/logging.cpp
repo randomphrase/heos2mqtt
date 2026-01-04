@@ -5,6 +5,7 @@
 
 #include <iostream>
 #include <iterator>
+#include <filesystem>
 
 namespace logging {
 
@@ -32,6 +33,14 @@ const std::source_location& log_record::location() const {
     return location_;
 }
 
+std::string_view log_record::source_file() const {
+    std::string_view file = location_.file_name();
+    if (auto pos = file.find_last_of(std::filesystem::path::preferred_separator); pos != std::string_view::npos) {
+        file.remove_prefix(pos + 1);
+    }
+    return file;
+}
+
 logger::logger()
     : stream_(&std::clog) {}
 
@@ -52,7 +61,7 @@ void logger::emit(const log_record& record) {
         "{:%T} [{}] {}:{} - {}\n",
         record.timestamp(),
         record.level(),
-        record.location().file_name(),
+        record.source_file(),
         record.location().line(),
         record.message());
 }

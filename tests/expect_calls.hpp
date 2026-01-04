@@ -1,8 +1,6 @@
 #pragma once
 
-#include <catch2/catch_test_macros.hpp>
-#include <catch2/internal/catch_result_type.hpp>
-#include <catch2/internal/catch_assertion_handler.hpp>
+#include <catch2/catch_test_macros.hpp>  // TODO somehow include only AssertionHandler
 #include <fmt/format.h>
 
 #include <memory>
