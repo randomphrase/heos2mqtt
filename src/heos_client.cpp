@@ -4,7 +4,9 @@
 #include <boost/asio/connect.hpp>
 #include <boost/asio/read_until.hpp>
 #include <boost/asio/write.hpp>
+
 #include <fmt/core.h>
+#include <fmt/chrono.h>
 
 #include <algorithm>
 #include <chrono>
@@ -15,19 +17,22 @@ namespace heos2mqtt {
 using namespace std::chrono_literals;
 using namespace logging;
 
-heos_client::heos_client(boost::asio::io_context& io,
-                         std::string host,
-                         std::string port,
-                         line_handler handler)
-    : strand_(boost::asio::make_strand(io)),
-      resolver_(io),
-      socket_(io),
-      reconnect_timer_(io),
-      host_(std::move(host)),
-      port_(std::move(port)),
-      handler_(std::move(handler)) {
-
-    info("HEOS client created for {}:{}", host_, port_);
+heos_client::heos_client(
+    std::string_view log_name,
+    boost::asio::io_context& io,
+    std::string host,
+    std::string port,
+    line_handler handler)
+  : log_name_{log_name}
+  , strand_(boost::asio::make_strand(io))
+  , resolver_(io)
+  , socket_(io)
+  , reconnect_timer_(io)
+  , host_(std::move(host))
+  , port_(std::move(port))
+  , handler_(std::move(handler))
+{
+    info("[{}] created for {}:{}", log_name_, host_, port_);
 }
 
 void heos_client::start() {
@@ -68,7 +73,7 @@ void heos_client::initiate_connect() {
         return;
     }
 
-    fmt::print("HEOS: resolving {}:{}\n", host_, port_);
+    info("[{}]: resolving {}:{}", log_name_, host_, port_);
     resolver_.async_resolve(
         host_, port_,
         boost::asio::bind_executor(
@@ -78,7 +83,7 @@ void heos_client::initiate_connect() {
                     return;
                 }
                 if (ec) {
-                    fmt::print(stderr, "HEOS: resolve error: {}\n", ec.message());
+                    error("[{}]: resolve error: {}", log_name_, ec.message());
                     schedule_reconnect();
                     return;
                 }
@@ -92,7 +97,7 @@ void heos_client::initiate_connect(boost::asio::ip::tcp::resolver::results_type 
         return;
     }
 
-    fmt::print("HEOS: connecting...\n");
+    info("[{}]: connecting...", log_name_);
     boost::asio::async_connect(
         socket_, std::move(results),
         boost::asio::bind_executor(
@@ -103,12 +108,12 @@ void heos_client::initiate_connect(boost::asio::ip::tcp::resolver::results_type 
                     return;
                 }
                 if (connect_ec) {
-                    fmt::print(stderr, "HEOS: connect error: {}\n", connect_ec.message());
+                    error("[{}]: connect error: {}", log_name_, connect_ec.message());
                     schedule_reconnect();
                     return;
                 }
 
-                fmt::print("HEOS: connected\n");
+                info("[{}]: connected", log_name_);
                 reconnect_attempts_ = 0;
                 start_read();
             }));
@@ -125,7 +130,7 @@ void heos_client::start_read() {
 
                 if (ec) {
                     if (ec != boost::asio::error::operation_aborted) {
-                        fmt::print(stderr, "HEOS: read error: {}\n", ec.message());
+                        error("[{}]: read error: {}", log_name_, ec.message());
                     }
                     close_socket();
                     schedule_reconnect();
@@ -160,8 +165,7 @@ void heos_client::schedule_reconnect() {
         delay = reconnect_max_;
     }
 
-    fmt::print("HEOS: reconnect in {}ms\n",
-               std::chrono::duration_cast<std::chrono::milliseconds>(delay).count());
+    info("[{}]: reconnect in {}", log_name_, delay);
     reconnect_timer_.expires_after(delay);
     reconnect_timer_.async_wait(boost::asio::bind_executor(
         strand_, [this](const boost::system::error_code& ec) {

@@ -12,7 +12,9 @@ class heos_client {
 public:
     using line_handler = std::function<void(std::string)>;
 
-    heos_client(boost::asio::io_context& io,
+    heos_client(
+        std::string_view log_name,
+        boost::asio::io_context& io,
                 std::string host,
                 std::string port,
                 line_handler handler);
@@ -29,6 +31,7 @@ private:
     void schedule_reconnect();
     void close_socket();
 
+    std::string log_name_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     boost::asio::ip::tcp::resolver resolver_;
     boost::asio::ip::tcp::socket socket_;

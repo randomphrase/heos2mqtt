@@ -15,29 +15,22 @@ using namespace std::chrono_literals;
 
 namespace {
 
-using clock_type = std::chrono::steady_clock;
-
-void run_for(boost::asio::io_context& io, clock_type::duration duration) {
-    auto end = clock_type::now() + duration;
-    test::run_until(io, duration, [&]() { return clock_type::now() >= end; });
-}
-
 class mock_heos_server {
 public:
     mock_heos_server(boost::asio::io_context& io, std::uint16_t port)
         : acceptor_(io, {boost::asio::ip::tcp::v4(), port}) {}
 
     struct batch {
-        std::vector<std::string> lines;
-        bool close_after{true};
-        std::size_t index{0};
+        std::vector<std::string> lines_;
+        bool close_after_{true};
+        std::size_t index_{0};
     };
 
     void enqueue(batch batch_item) {
         batches_.push_back(std::move(batch_item));
     }
 
-    std::uint16_t port() const {
+    [[nodiscard]] std::uint16_t port() const {
         return acceptor_.local_endpoint().port();
     }
 
@@ -74,8 +67,8 @@ private:
         if (!socket_) {
             return;
         }
-        if (batch_item->index >= batch_item->lines.size()) {
-            if (batch_item->close_after) {
+        if (batch_item->index_ >= batch_item->lines_.size()) {
+            if (batch_item->close_after_) {
                 boost::system::error_code ec;
                 socket_->shutdown(boost::asio::ip::tcp::socket::shutdown_both, ec);
                 socket_->close(ec);
@@ -85,7 +78,7 @@ private:
             return;
         }
 
-        auto line = batch_item->lines[batch_item->index++] + "\r\n";
+        auto line = batch_item->lines_[batch_item->index_++] + "\r\n";
         boost::asio::async_write(
             *socket_, boost::asio::buffer(line),
             [this, batch_item](const boost::system::error_code& ec, std::size_t /*bytes*/) {
@@ -114,22 +107,22 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
 
     std::vector<std::string> received;
 
-    heos2mqtt::heos_client client(
+    heos2mqtt::heos_client client("test_client",
         io, "127.0.0.1", std::to_string(server.port()),
         [&](std::string line) { received.push_back(std::move(line)); });
 
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
 
-    REQUIRE(test::run_until(io, 500ms, [&]() {
+    test::run_until(io, [&]() {
         return received.size() == 3;
-    }));
+    });
 
     REQUIRE(received == std::vector<std::string>{"line1", "line2", "line3"});
 
     client.stop();
     server.stop();
-    run_for(io, 200ms);
+    test::run_for(io, 200ms);
 }
 
 TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
@@ -142,22 +135,22 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
 
     std::vector<std::string> received;
 
-    heos2mqtt::heos_client client(
+    heos2mqtt::heos_client client("test_client",
         io, "127.0.0.1", std::to_string(server.port()),
         [&](std::string line) { received.push_back(std::move(line)); });
 
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
 
-    REQUIRE(test::run_until(io, 4s, [&]() {
+    test::run_until(io, [&]() {
         return received.size() == 2;
-    }));
+    });
 
     REQUIRE(received == std::vector<std::string>{"first", "second"});
 
     client.stop();
     server.stop();
-    run_for(io, 500ms);
+    test::run_remaining(io);
 }
 
 TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
@@ -166,19 +159,21 @@ TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
     mock_heos_server server(io, 0);
     server.start();
 
-    heos2mqtt::heos_client client(io, "127.0.0.1", std::to_string(server.port()),
+    heos2mqtt::heos_client client("test_client", io, "127.0.0.1", std::to_string(server.port()),
                                   [](std::string) {});
 
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
 
-    run_for(io, 200ms);
+    test::run_for(io, 200ms);
 
     client.stop();
     client.stop();
 
     server.stop();
-    run_for(io, 200ms);
+    test::run_for(io, 200ms);
 
     SUCCEED("Stop completed without deadlock");
+
+    test::run_remaining(io);
 }

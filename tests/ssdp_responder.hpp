@@ -1,97 +1,76 @@
 #pragma once
 
+#include "logging/logging.hpp"
+
 #include "run_until.hpp"
 
-#include <boost/asio.hpp>
+#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/udp.hpp>
 
-#include <array>
+#include <fmt/ostream.h>
+
 #include <chrono>
-#include <cstdint>
+#include <array>
 #include <optional>
-#include <stdexcept>
 #include <string>
 #include <string_view>
+#include <system_error>
 
 namespace test {
+
+using namespace logging;
 
 class ssdp_responder {
 public:
     using udp = boost::asio::ip::udp;
 
     struct request {
-        std::string payload;
-        udp::endpoint sender;
+        std::string payload_;
+        udp::endpoint sender_;
     };
 
     explicit ssdp_responder(boost::asio::io_context& io,
-                            udp::endpoint listen_endpoint = udp::endpoint{udp::v4(), 0})
-        : io_(io),
-          socket_(io) {
-        boost::system::error_code ec;
-        socket_.open(listen_endpoint.protocol(), ec);
-        if (ec) {
-            throw std::runtime_error("ssdp_responder socket open failed: " + ec.message());
-        }
-        socket_.set_option(boost::asio::socket_base::reuse_address(true), ec);
-        socket_.bind(listen_endpoint, ec);
-        if (ec) {
-            throw std::runtime_error("ssdp_responder socket bind failed: " + ec.message());
-        }
+        const udp::endpoint& listen_endpoint = {boost::asio::ip::address_v4::loopback(), 0})
+    : io_{io}
+    , socket_{io}
+    {
+        socket_.open(listen_endpoint.protocol());
+        socket_.set_option(boost::asio::socket_base::reuse_address(true));
+        socket_.bind(listen_endpoint);
+        info("SSDP responder listening on {}", fmt::streamed(socket_.local_endpoint()));
     }
 
-    ~ssdp_responder() {
-        close();
-    }
+    // [[nodiscard]] std::uint16_t port() const {
+    //     return socket_.local_endpoint().port();
+    // }
 
-    std::uint16_t port() const {
-        return socket_.local_endpoint().port();
-    }
-
-    udp::endpoint endpoint() const {
+    [[nodiscard]] udp::endpoint endpoint() const {
         return socket_.local_endpoint();
     }
 
-    bool expect_request(std::chrono::steady_clock::duration timeout,
-                        std::string_view expected_substring,
-                        std::string_view response) {
-        last_request_.reset();
-        boost::system::error_code receive_ec;
-        bool received = false;
+    request expect_request(clock_type::duration timeout = default_timeout) {
+        std::optional<request> received;
 
         socket_.async_receive_from(
             boost::asio::buffer(buffer_), sender_,
             [&](const boost::system::error_code& ec, std::size_t bytes) {
-                receive_ec = ec;
-                received = true;
-                if (!ec) {
-                    last_request_ = request{std::string(buffer_.data(), bytes), sender_};
+                if (ec) {
+                    if (ec != boost::asio::error::operation_aborted) {
+                        throw std::system_error(ec);
+                    }
+                    return;
                 }
+                // TODO check for a complete response - we assume it
+                // will fit into a single UDP packet
+                // TODO basic sanity check on the response - HTTP OK for example
+                received.emplace(std::string(buffer_.data(), bytes), sender_);
             });
 
-        if (!run_until(io_, timeout, [&]() { return received; })) {
-            boost::system::error_code ec;
-            socket_.cancel(ec);
-            return false;
-        }
+        test::run_until(io_, [&]() {
+            return received.has_value();
+        }, timeout);
 
-        if (receive_ec || !last_request_) {
-            return false;
-        }
-
-        if (!expected_substring.empty() &&
-            last_request_->payload.find(expected_substring) == std::string::npos) {
-            return false;
-        }
-
-        if (!response.empty()) {
-            return send_response(response, last_request_->sender);
-        }
-
-        return true;
-    }
-
-    const std::optional<request>& last_request() const {
-        return last_request_;
+        return *received;
     }
 
     void close() {
@@ -102,18 +81,17 @@ public:
         socket_.close(ec);
     }
 
-private:
     bool send_response(std::string_view response, const udp::endpoint& target) {
         boost::system::error_code ec;
         socket_.send_to(boost::asio::buffer(response), target, 0, ec);
         return !ec;
     }
 
-    boost::asio::io_context& io_;
+private:
+    boost::asio::io_context& io_; // TODO: remove, only needed to call run_until
     udp::socket socket_;
-    std::array<char, 2048> buffer_{};
     udp::endpoint sender_;
-    std::optional<request> last_request_;
+    std::array<char, 2048> buffer_{};
 };
 
 }  // namespace test
