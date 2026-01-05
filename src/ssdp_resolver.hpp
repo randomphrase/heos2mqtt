@@ -30,11 +30,14 @@ public:
     using completion_handler_type =
         net::any_completion_handler<void(boost::system::error_code, udp::endpoint)>;
 
+    static constexpr std::chrono::seconds default_timeout {3};
+
     ssdp_resolver(net::io_context& io, udp::endpoint endpoint = default_ssdp_endpoint)
-        : strand_(net::make_strand(io)),
-          socket_(io),
-          timer_(io),
-          target_endpoint_(std::move(endpoint)) {}
+      : strand_(net::make_strand(io))
+      , socket_(io)
+      , timer_(io)
+      , target_endpoint_(std::move(endpoint))
+    {}
 
     void set_outbound_interface(std::optional<net::ip::address_v4> iface) {
         outbound_interface_ = std::move(iface);
