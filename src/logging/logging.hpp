@@ -2,13 +2,16 @@
 
 #include <fmt/core.h>
 
+#include <array>
 #include <chrono>
 #include <cstdint>
+#include <memory>
 #include <source_location>
 #include <ostream>
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 namespace logging {
 
@@ -20,6 +23,9 @@ enum class severity : uint8_t {
     warning,
     error
 };
+constexpr size_t max_enum_value(severity /*unused*/) {
+    return static_cast<size_t>(severity::error);
+}
 
 }
 namespace fmt {
@@ -45,9 +51,10 @@ namespace logging {
 
 class log_record {
 public:
-    log_record(severity level,
-               std::string message,
-               std::source_location location);
+    log_record(
+        severity level,
+        std::string_view message,
+        std::source_location location);
 
     [[nodiscard]] severity level() const;
     [[nodiscard]] clock::time_point timestamp() const;
@@ -58,20 +65,73 @@ public:
 private:
     severity level_;
     clock::time_point timestamp_;
-    std::string message_;
+    std::string_view message_;
     std::source_location location_;
+};
+
+class log_destination {
+public:
+    log_destination() = default;
+
+    log_destination(const log_destination&) = default;
+    log_destination& operator=(const log_destination&) = default;
+    log_destination(log_destination&&) = default;
+    log_destination& operator=(log_destination&&) = default;
+
+    virtual ~log_destination();
+    virtual void emit(const log_record& record) = 0;
+};
+
+class log_destination_ostream final : public log_destination {
+public:
+    explicit log_destination_ostream(std::ostream& stream);
+
+    log_destination_ostream(const log_destination_ostream&) = delete;
+    log_destination_ostream& operator=(const log_destination_ostream&) = delete;
+    log_destination_ostream(log_destination_ostream&&) = delete;
+    log_destination_ostream& operator=(log_destination_ostream&&) = delete;
+    ~log_destination_ostream() override = default;
+
+    void emit(const log_record& record) override;
+private:
+    std::ostream& stream_;
 };
 
 class logger {
 public:
-    static logger& instance();
-    void set_stream(std::ostream& stream);
-    void emit(const log_record& record);
+    static logger& get_instance(const std::source_location& location);
+
+    static logger& get_default();
+
+    using log_destination_ptr = std::shared_ptr<log_destination>;
+
+    logger(severity min_level, log_destination_ptr&& default_dest,
+        std::initializer_list<std::pair<severity, log_destination_ptr>> level_dests = {});
+    logger(const logger&) = default;
+    logger& operator=(const logger&) = default;
+    logger(logger&&) noexcept = default;
+    logger& operator=(logger&&) noexcept = default;
+    ~logger() = default;
+
+    template <typename... Args>
+    static void log(severity level, const std::source_location& location, fmt::format_string<Args...> format, Args&&... args) {
+        auto* dest = get_instance(location).get_destination_for_level(level);
+        if (!dest) {
+            return;
+        }
+        buffer_ = fmt::format(format, std::forward<Args>(args)...);
+        log_record record {level, buffer_, location};
+        dest->emit(record);
+    }
+
+    [[nodiscard]] log_destination* get_destination_for_level(severity level) const {
+        return level_destinations_[static_cast<std::size_t>(level)];
+    }
 
 private:
-    logger();
-
-    std::ostream* stream_{};
+    std::array<log_destination*, max_enum_value(severity{}) + 1> level_destinations_{};
+    std::vector<log_destination_ptr> destinations_;
+    thread_local static std::string buffer_;
 };
 
 template <severity Level, typename... Args>
@@ -80,11 +140,7 @@ public:
     explicit log_line(fmt::format_string<Args...> format, Args&&... args,
         std::source_location location = std::source_location::current())
     {
-        log_record record {
-            Level,
-            fmt::format(format, std::forward<Args>(args)...),
-            location};
-        logger::instance().emit(record);
+        logger::log(Level, location, format, std::forward<Args>(args)...);
     }
 };
 
