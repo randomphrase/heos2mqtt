@@ -50,9 +50,7 @@ jobs:
           path: |
             ~/.cache/vcpkg/archives
             build/ninja-multi/vcpkg_installed
-          key: ${{ runner.os }}-${{ runner.arch }}-vcpkg-${{ hashFiles('vcpkg.json') }}-${{ matrix.cxxflags }}
-          restore-keys: |
-            ${{ runner.os }}-${{ runner.arch }}-vcpkg-
+          key: vcpkg-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('vcpkg.json') }}-${{ matrix.cxxflags }}-${{ matrix.config-options }}
 
       - name: Install dependencies
         if: runner.os == 'Linux'
