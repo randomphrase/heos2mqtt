@@ -21,15 +21,26 @@ find_package(fmt CONFIG REQUIRED)
 find_package(Catch2 CONFIG REQUIRED)
 find_package(Threads REQUIRED)
 
-set(HEOS2MQTT_HAS_IO_URING OFF)
+add_library(asio STATIC
+    src/asio_separate_compilation.cpp
+)
+target_link_libraries(asio PUBLIC Boost::headers)
+target_compile_definitions(asio PUBLIC
+    BOOST_ASIO_NO_DEPRECATED
+    BOOST_ASIO_SEPARATE_COMPILATION
+)
+
+# On linux, we require liburing to enable io_uring support in asio
 if(CMAKE_SYSTEM_NAME STREQUAL "Linux")
   find_library(HEOS2MQTT_LIBURING NAMES uring)
   if(HEOS2MQTT_LIBURING)
-    set(HEOS2MQTT_HAS_IO_URING ON)
+    target_link_libraries(asio PUBLIC ${HEOS2MQTT_LIBURING})
+    target_compile_definitions(asio PUBLIC BOOST_ASIO_HAS_IO_URING=1)
   else()
     message(FATAL_ERROR "liburing is required on Linux builds to enable io_uring support.")
   endif()
 endif()
+
 
 add_library(logging STATIC
     src/logging/logging.cpp
@@ -47,6 +58,7 @@ target_link_libraries(logging_tests PRIVATE
   Catch2::Catch2WithMain
 )
 
+
 add_library(heos_client STATIC
     src/heos_client.cpp
 )
@@ -56,15 +68,12 @@ target_include_directories(heos_client PUBLIC
 )
 target_link_libraries(heos_client
     PUBLIC
+        asio
         Boost::headers
         logging
         fmt::fmt
         Threads::Threads
 )
-if(HEOS2MQTT_HAS_IO_URING)
-  target_link_libraries(heos_client PUBLIC ${HEOS2MQTT_LIBURING})
-  target_compile_definitions(heos_client PUBLIC BOOST_ASIO_HAS_IO_URING=1)
-endif()
 
 add_library(mqtt_publisher STATIC
     src/mqtt_publisher.cpp
@@ -75,6 +84,7 @@ target_include_directories(mqtt_publisher PUBLIC
 )
 target_link_libraries(mqtt_publisher
     PUBLIC
+        asio
         Boost::headers
         Boost::json
         fmt::fmt
