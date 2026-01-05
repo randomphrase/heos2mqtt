@@ -53,9 +53,17 @@ target_link_libraries(logging PUBLIC fmt::fmt)
 add_executable(logging_tests
     tests/logging_tests.cpp
 )
+add_library(test_support INTERFACE)
+target_sources(test_support INTERFACE tests/catch_exception_stacktrace.cpp)
+target_link_libraries(test_support INTERFACE Boost::stacktrace_backtrace)
+if(TARGET Boost::stacktrace_from_exception)
+  target_link_libraries(test_support INTERFACE Boost::stacktrace_from_exception)
+endif()
+
 target_link_libraries(logging_tests PRIVATE
   logging
   Catch2::Catch2WithMain
+  test_support
 )
 
 
@@ -98,7 +106,6 @@ add_executable(heos2mqtt
 target_link_libraries(heos2mqtt PRIVATE heos_client mqtt_publisher)
 
 add_executable(heos_client_tests
-    tests/catch_exception_stacktrace.cpp
     tests/heos_client_tests.cpp
     tests/logging_tests.cpp
     tests/ssdp_resolver_tests.cpp
@@ -108,12 +115,9 @@ target_link_libraries(heos_client_tests
         heos_client
         Catch2::Catch2WithMain
         Boost::headers
-        Boost::stacktrace_backtrace
         logging
+        test_support
 )
-if(TARGET Boost::stacktrace_from_exception)
-    target_link_libraries(heos_client_tests PRIVATE Boost::stacktrace_from_exception)
-endif()
 target_compile_definitions(heos_client_tests PRIVATE BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED)
 
 include(CTest)
