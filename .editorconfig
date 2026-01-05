@@ -11,5 +11,5 @@ indent_style = space
 trim_trailing_whitespace = true
 
 # 4 space indentation
-[*.(cpp|hpp)]
+[*.{cpp,hpp}]
 indent_size = 4
