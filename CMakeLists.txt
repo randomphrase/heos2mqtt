@@ -10,11 +10,6 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-if(CMAKE_EXPORT_COMPILE_COMMANDS)
-  set(CMAKE_CXX_STANDARD_INCLUDE_DIRECTORIES
-    ${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES})
-endif()
-
 find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5 stacktrace_backtrace)
 find_package(Boost 1.90 QUIET COMPONENTS stacktrace_from_exception)
 if(NOT TARGET Boost::stacktrace AND TARGET Boost::stacktrace_backtrace)
