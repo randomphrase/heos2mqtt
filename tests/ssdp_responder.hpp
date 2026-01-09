@@ -81,10 +81,8 @@ public:
         socket_.close(ec);
     }
 
-    bool send_response(std::string_view response, const udp::endpoint& target) {
-        boost::system::error_code ec;
-        socket_.send_to(boost::asio::buffer(response), target, 0, ec);
-        return !ec;
+    void send_response(std::string_view response, const udp::endpoint& target) {
+        socket_.send_to(boost::asio::buffer(response), target, 0);
     }
 
 private:

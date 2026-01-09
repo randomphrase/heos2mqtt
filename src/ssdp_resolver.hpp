@@ -125,22 +125,12 @@ void ssdp_resolver::begin_resolve(std::string search_target,
             request_.append(search_target_);
             request_.append("\r\n\r\n");
 
-            boost::system::error_code ec;
-            socket_.open(target_endpoint_.protocol(), ec);
-            if (!ec) {
-                socket_.set_option(net::socket_base::reuse_address(true), ec);
-            }
-            if (!ec) {
-                socket_.bind(udp::endpoint(target_endpoint_.protocol(), 0), ec);
-            }
-            if (!ec && target_endpoint_.address().is_multicast() && target_endpoint_.protocol() == udp::v4() &&
-                outbound_interface_) {
+            socket_.open(target_endpoint_.protocol());
+            socket_.set_option(net::socket_base::reuse_address(true));
+            socket_.bind(udp::endpoint(target_endpoint_.protocol(), 0));
+            if (target_endpoint_.address().is_multicast() && target_endpoint_.protocol() == udp::v4() && outbound_interface_) {
                 socket_.set_option(
-                    net::ip::multicast::outbound_interface(outbound_interface_->to_uint()), ec);
-            }
-            if (ec) {
-                finish(ec, {});
-                return;
+                    net::ip::multicast::outbound_interface(outbound_interface_->to_uint()));
             }
 
             socket_.async_send_to(

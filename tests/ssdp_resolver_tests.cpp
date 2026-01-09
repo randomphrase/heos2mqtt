@@ -14,15 +14,10 @@ using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
     boost::asio::io_context io;
-
     test::ssdp_responder responder(io);
-
-    std::string response =
-        "HTTP/1.1 200 OK\r\nST: urn:schemas-denon-com:device:ACT-Denon:1\r\n\r\n";
-    bool resolved = false;
-
     heos2mqtt::ssdp_resolver resolver(io, responder.endpoint());
 
+    bool resolved = false;
     resolver.async_resolve(
         "urn:schemas-denon-com:device:ACT-Denon:1", 1s,
         test::expect_calls(
@@ -35,6 +30,8 @@ TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
     auto req = responder.expect_request();
     CHECK_THAT(req.payload_, ContainsSubstring("M-SEARCH"));
 
+    const std::string_view response =
+        "HTTP/1.1 200 OK\r\nST: urn:schemas-denon-com:device:ACT-Denon:1\r\n\r\n";
     responder.send_response(response, req.sender_);
     test::run_until(io, [&]() { return resolved; });
 
