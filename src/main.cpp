@@ -70,8 +70,9 @@ int main(int argc, char** argv) {
     auto work_guard = boost::asio::make_work_guard(io);
 
     heos2mqtt::mqtt_publisher publisher(io, opts.mqtt_host, opts.mqtt_port, opts.base_topic);
+    auto heos_port = static_cast<boost::asio::ip::port_type>(std::stoul(opts.heos_port));
     heos2mqtt::heos_client client("HEOS",
-        io, opts.heos_host, opts.heos_port,
+        io, opts.heos_host, heos_port,
         [&publisher](std::string line) { publisher.publish_raw(std::move(line)); });
 
     boost::asio::signal_set signals(io, SIGINT, SIGTERM);
