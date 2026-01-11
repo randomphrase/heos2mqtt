@@ -24,7 +24,7 @@
       "dependencies": [
         {
           "name": "boost-stacktrace",
-          "features": ["basic"]
+          "default-features": false
         }
       ]
     }
