@@ -10,6 +10,7 @@
 #include <ostream>
 #include <string>
 #include <string_view>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -113,8 +114,8 @@ public:
     logger& operator=(logger&&) noexcept = default;
     ~logger() = default;
 
-    template <typename... Args>
-    static void log(severity level, const std::source_location& location, fmt::format_string<Args...> format, Args&&... args) {
+    template <severity Level, typename... Args>
+    static void log(std::integral_constant<severity, Level> level, const std::source_location& location, fmt::format_string<Args...> format, Args&&... args) {
         auto* dest = get_instance(location).get_destination_for_level(level);
         if (!dest) {
             return;
@@ -124,8 +125,9 @@ public:
         dest->emit(record);
     }
 
-    [[nodiscard]] log_destination* get_destination_for_level(severity level) const {
-        return level_destinations_[static_cast<std::size_t>(level)];
+    template <severity Level>
+    [[nodiscard]] log_destination* get_destination_for_level(std::integral_constant<severity,Level> /*unused*/) const {
+        return level_destinations_[static_cast<std::size_t>(Level)];
     }
 
 private:
@@ -140,7 +142,7 @@ public:
     explicit log_line(fmt::format_string<Args...> format, Args&&... args,
         std::source_location location = std::source_location::current())
     {
-        logger::log(Level, location, format, std::forward<Args>(args)...);
+        logger::log(std::integral_constant<severity, Level>{}, location, format, std::forward<Args>(args)...);
     }
 };
 
