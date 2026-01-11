@@ -10,11 +10,16 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5 stacktrace_backtrace)
-find_package(Boost 1.90 QUIET COMPONENTS stacktrace_from_exception)
-if(NOT TARGET Boost::stacktrace AND TARGET Boost::stacktrace_backtrace)
-  add_library(Boost::stacktrace INTERFACE IMPORTED)
+find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5)
+find_package(Boost 1.90 QUIET COMPONENTS stacktrace_backtrace stacktrace_basic stacktrace_from_exception)
+add_library(Boost::stacktrace INTERFACE IMPORTED)
+if(TARGET Boost::stacktrace_backtrace)
   target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_backtrace)
+elseif(TARGET Boost::stacktrace_basic)
+  target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_basic)
+endif()
+if(TARGET Boost::stacktrace_from_exception)
+  target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_from_exception)
 endif()
 
 find_package(fmt CONFIG REQUIRED)
@@ -55,10 +60,7 @@ add_executable(logging_tests
 )
 add_library(test_support INTERFACE)
 target_sources(test_support INTERFACE tests/catch_exception_stacktrace.cpp)
-target_link_libraries(test_support INTERFACE Boost::stacktrace_backtrace)
-if(TARGET Boost::stacktrace_from_exception)
-  target_link_libraries(test_support INTERFACE Boost::stacktrace_from_exception)
-endif()
+target_link_libraries(test_support INTERFACE Boost::stacktrace)
 
 target_link_libraries(logging_tests PRIVATE
   logging
