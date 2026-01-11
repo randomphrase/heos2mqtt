@@ -2,7 +2,7 @@
   "name": "heos2mqtt",
   "version-string": "0.1.0",
   "description": "Service that bridges HEOS CLI output to MQTT.",
-  "builtin-baseline": "64e1fbee7d9f40eab5d112aaff648c4dcffe9e47",
+  "builtin-baseline": "84bab45d415d22042bd0b9081aea57f362da3f35",
   "dependencies": [
     {
       "name": "boost-asio",
@@ -35,7 +35,9 @@
       "dependencies": [
         {
           "name": "boost-stacktrace",
-          "features": ["backtrace"],
+          "features": [
+            "backtrace"
+          ],
           "version>=": "1.90.0"
         }
       ]
