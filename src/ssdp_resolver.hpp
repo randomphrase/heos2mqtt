@@ -13,6 +13,8 @@
 #include <boost/asio/strand.hpp>
 #include <boost/beast/http.hpp>
 
+#include <fmt/ostream.h>
+
 #include <array>
 #include <chrono>
 #include <optional>
@@ -74,7 +76,7 @@ private:
     void handle_receive(const boost::system::error_code& ec, std::size_t bytes);
     void handle_timeout(const boost::system::error_code& ec);
     void finish(const boost::system::error_code& ec, net::ip::address address);
-    bool response_matches(std::string_view payload) const;
+    [[nodiscard]] bool response_matches(std::string_view payload) const;
 
     net::strand<net::io_context::executor_type> strand_;
     udp::socket socket_;
@@ -179,9 +181,9 @@ inline void ssdp_resolver::handle_receive(const boost::system::error_code& ec, s
     }
 
     std::string_view payload(buffer_.data(), bytes);
-    debug("SSDP: received {} bytes from {}", bytes, sender_.address().to_string());
+    debug("SSDP: received {} bytes from {}", bytes, fmt::streamed(sender_.address()));
     if (response_matches(payload)) {
-        info("SSDP: matched response from {}", sender_.address().to_string());
+        info("SSDP: matched response from {}", fmt::streamed(sender_.address()));
         finish({}, sender_.address());
         return;
     }
