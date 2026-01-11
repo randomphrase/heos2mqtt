@@ -33,7 +33,6 @@ public:
 private:
     void initiate_resolve();
     void initiate_connect();
-    void initiate_connect(tcp::resolver::results_type&& results);
     void start_read();
     void schedule_reconnect();
     void close_socket();
@@ -41,7 +40,6 @@ private:
     std::string log_name_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     ssdp_resolver ssdp_resolver_;
-    tcp::resolver resolver_;
     tcp::socket socket_;
     boost::asio::streambuf read_buffer_;
     boost::asio::steady_timer reconnect_timer_;

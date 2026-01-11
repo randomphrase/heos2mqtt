@@ -17,6 +17,10 @@
       "version>=": "1.90.0"
     },
     {
+      "name": "boost-beast",
+      "version>=": "1.90.0"
+    },
+    {
       "name": "fmt",
       "version>=": "12.1.0"
     },
