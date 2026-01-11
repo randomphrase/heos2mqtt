@@ -6,11 +6,30 @@
     "boost-asio",
     "boost-json",
     "boost-mqtt5",
-    {
-      "name": "boost-stacktrace",
-      "features": ["backtrace"]
-    },
     "fmt",
     "catch2"
+  ],
+  "features": {
+    "stacktrace-backtrace": {
+      "description": "Use boost-stacktrace with libbacktrace support.",
+      "dependencies": [
+        {
+          "name": "boost-stacktrace",
+          "features": ["backtrace"]
+        }
+      ]
+    },
+    "stacktrace-basic": {
+      "description": "Use boost-stacktrace with basic support.",
+      "dependencies": [
+        {
+          "name": "boost-stacktrace",
+          "features": ["basic"]
+        }
+      ]
+    }
+  },
+  "default-features": [
+    "stacktrace-backtrace"
   ]
 }

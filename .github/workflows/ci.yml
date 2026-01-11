@@ -17,14 +17,18 @@ jobs:
             runs-on: ubuntu-24.04
             memorycheck-type: AddressSanitizer
             cxxflags: -fno-omit-frame-pointer -fsanitize=address
+
           - name: UBSan Ubuntu ARM
             runs-on: ubuntu-24.04-arm
             memorycheck-type: UndefinedBehaviorSanitizer
             cxxflags: -fno-omit-frame-pointer -fsanitize=undefined
+
           - name: macOS ARM
             runs-on: macos-26
             config-options: -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
             generator: Xcode
+            vcpkg_features: stacktrace-basic
+
           - name: Clang Tidy
             runs-on: ubuntu-24.04
             config-options: -DCMAKE_CXX_CLANG_TIDY=clang-tidy
@@ -33,6 +37,7 @@ jobs:
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
       CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.cxxflags }}
+      VCPKG_MANIFEST_FEATURES: ${{ matrix.vcpkg_features }}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
@@ -73,7 +78,7 @@ jobs:
           # change-id: ${{ steps.checkout.outputs.commit }}
           config-options: ${{ matrix.config-options }}
           coverage-command: ${{ matrix.coverage-command }}
-          cmake-generator: ${{ matrix.generator }}
+          cmake-generator: ${{ matrix.generator || 'Ninja' }}
           # memorycheck-command: ${{ matrix.conf.memorycheck-command }}
           memorycheck-type: ${{ matrix.memorycheck-type }}
           submit-url: "https://my.cdash.org/submit.php?project=heos2mqtt"
