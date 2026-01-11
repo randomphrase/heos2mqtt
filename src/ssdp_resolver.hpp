@@ -69,6 +69,7 @@ private:
     void handle_receive(const boost::system::error_code& ec, std::size_t bytes);
     void handle_timeout(const boost::system::error_code& ec);
     void finish(const boost::system::error_code& ec, udp::endpoint endpoint);
+    bool response_matches(std::string_view payload) const;
 
     net::strand<net::io_context::executor_type> strand_;
     udp::socket socket_;
@@ -167,8 +168,7 @@ inline void ssdp_resolver::handle_receive(const boost::system::error_code& ec, s
     }
 
     std::string_view payload(buffer_.data(), bytes);
-    if (payload.find(search_target_) != std::string_view::npos ||
-        payload.find("HTTP/1.1 200") != std::string_view::npos) {
+    if (response_matches(payload)) {
         finish({}, sender_);
         return;
     }
@@ -198,6 +198,32 @@ inline void ssdp_resolver::finish(const boost::system::error_code& ec, udp::endp
             handler(ec, endpoint);
         }
     });
+}
+
+inline bool ssdp_resolver::response_matches(std::string_view payload) const {
+    if (payload.find("HTTP/1.1 200") == std::string_view::npos) {
+        return false;
+    }
+
+    auto st_pos = payload.find("\r\nST:");
+    if (st_pos == std::string_view::npos) {
+        st_pos = payload.find("\nST:");
+    }
+    if (st_pos != std::string_view::npos) {
+        auto value_start = payload.find(':', st_pos);
+        if (value_start == std::string_view::npos) {
+            return false;
+        }
+        value_start += 1;
+        while (value_start < payload.size() && payload[value_start] == ' ') {
+            value_start += 1;
+        }
+        auto value_end = payload.find_first_of("\r\n", value_start);
+        auto value = payload.substr(value_start, value_end - value_start);
+        return value == search_target_;
+    }
+
+    return payload.find(search_target_) != std::string_view::npos;
 }
 
 }  // namespace heos2mqtt
