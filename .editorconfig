@@ -10,6 +10,10 @@ insert_final_newline = true
 indent_style = space
 trim_trailing_whitespace = true
 
+# vcpkg uses windows line endings
+[external/vcpkg/**/*]
+end_of_line = crlf
+
 # 4 space indentation
 [*.{cpp,hpp}]
 indent_size = 4
