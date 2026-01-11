@@ -44,24 +44,24 @@ public:
     }
 
     template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
-    auto async_resolve(std::string search_target,
-      std::chrono::steady_clock::duration timeout,
-      CompletionToken&& token) {
-      return net::async_initiate<CompletionToken, void(boost::system::error_code, udp::endpoint)>(
-        [this, search_target = std::move(search_target), timeout](auto&& handler) mutable {
+    auto async_resolve(std::string_view search_target,
+        std::chrono::steady_clock::duration timeout,
+        CompletionToken&& token) // NOLINT(cppcoreguidelines-missing-std-forward)
+    {
+        auto initiation = [this, search_target = std::string(search_target), timeout](auto&& handler) mutable {
           this->begin_resolve(std::move(search_target), timeout, std::forward<decltype(handler)>(handler));
-        },
-        token);
+        };
+        return net::async_initiate<CompletionToken, void(boost::system::error_code, udp::endpoint)>(initiation, token);
     }
 
     template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
-    auto async_resolve(std::string search_target, CompletionToken&& token) {
-      return async_resolve(std::move(search_target), std::chrono::seconds(3), std::forward<CompletionToken>(token));
+    auto async_resolve(std::string_view search_target, CompletionToken&& token) {
+      return async_resolve(search_target, default_timeout, std::forward<CompletionToken>(token));
     }
 
 private:
     template <typename Handler>
-    void begin_resolve(std::string search_target,
+    void begin_resolve(std::string&& search_target,
                        std::chrono::steady_clock::duration timeout,
                        Handler&& handler);
 
@@ -85,7 +85,7 @@ private:
 };
 
 template <typename Handler>
-void ssdp_resolver::begin_resolve(std::string search_target,
+void ssdp_resolver::begin_resolve(std::string&& search_target,
                                   std::chrono::steady_clock::duration timeout,
                                   Handler&& handler) {
     completion_handler_type completion(std::forward<Handler>(handler));

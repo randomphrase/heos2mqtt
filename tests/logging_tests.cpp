@@ -12,9 +12,14 @@ namespace {
 class scoped_logger_override {
 public:
     explicit scoped_logger_override(logging::logger replacement)
-        : saved_(logging::logger::get_default()) {
+      : saved_(logging::logger::get_default())
+    {
         logging::logger::get_default() = std::move(replacement);
     }
+    scoped_logger_override(const scoped_logger_override &) = delete;
+    scoped_logger_override(scoped_logger_override &&) = delete;
+    scoped_logger_override &operator=(const scoped_logger_override &) = delete;
+    scoped_logger_override &operator=(scoped_logger_override &&) = delete;
 
     ~scoped_logger_override() {
         logging::logger::get_default() = saved_;

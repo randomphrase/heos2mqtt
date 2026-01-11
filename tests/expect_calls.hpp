@@ -16,7 +16,9 @@ class call_count_checker {
         unsigned calls_{0};
 
         state(const std::source_location &location, unsigned expected)
-        : location_(location), expected_(expected) {}
+          : location_(location)
+          , expected_(expected)
+        {}
 
         state(const state &) = delete;
         state(state &&) = delete;
