@@ -72,16 +72,18 @@ logger::logger(severity min_level,
     std::initializer_list<std::pair<severity, log_destination_ptr>> level_dests)
 {
     destinations_.push_back(std::move(default_dest));
-    for (std::size_t i = 0; i <= max_enum_value(severity{}); ++i) {
-        auto level = static_cast<severity>(i);
-        if (level >= min_level) {
-            level_destinations_[i] = destinations_.back().get();
+    for (auto& dest : level_destinations_) {
+        const auto level = static_cast<severity>(
+            std::distance(level_destinations_.begin(), &dest));
+        if (level < min_level) {
+            continue;
         }
+        dest = destinations_.back().get();
     }
 
     for (auto&& [level, dest] : level_dests) {
-        destinations_.push_back(std::move(dest));
-        level_destinations_[static_cast<std::size_t>(level)] = destinations_.back().get();
+        destinations_.push_back(dest);
+        level_destinations_.at(static_cast<std::size_t>(level)) = destinations_.back().get();
     }
 }
 
