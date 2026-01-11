@@ -58,7 +58,7 @@ TEST_CASE("logging emits formatted messages", "[logging]") {
 
     auto output = capture.str();
     CHECK(output.find("hello world") != std::string::npos);
-    CHECK(output.find("[INF]") != std::string::npos);
+    CHECK(output.find("INF") != std::string::npos);
 }
 
 TEST_CASE("logging routes by severity destination", "[logging]") {

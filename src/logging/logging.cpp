@@ -20,7 +20,7 @@ void log_destination_ostream::emit(const log_record& record) {
     // which is slow and redundant
     fmt::format_to(
         std::ostreambuf_iterator<char>(stream_),
-        "{:%T} [{}] {}:{} - {}\n",
+        "{:%T} {} {}:{} - {}\n",
         record.timestamp(),
         record.level(),
         record.source_file(),
