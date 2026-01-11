@@ -25,9 +25,11 @@ jobs:
 
           - name: macOS ARM
             runs-on: macos-26
-            config-options: -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+            config-options: |
+              -DCMAKE_XCODE_ATTRIBUTE_CODE_SIGNING_ALLOWED=NO
+              -DVCPKG_MANIFEST_FEATURES=stacktrace-basic
+              -DVCPKG_MANIFEST_NO_DEFAULT_FEATURES=ON
             generator: Xcode
-            vcpkg_features: stacktrace-basic
 
           - name: Clang Tidy
             runs-on: ubuntu-24.04
@@ -37,7 +39,6 @@ jobs:
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
       CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.cxxflags }}
-      VCPKG_MANIFEST_FEATURES: ${{ matrix.vcpkg_features }}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
