@@ -21,7 +21,8 @@ TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
     resolver.async_resolve(
         "urn:schemas-denon-com:device:ACT-Denon:1", 1s,
         test::expect_calls(
-            1, [&](const boost::system::error_code& ec, const boost::asio::ip::udp::endpoint& ep) {
+            1, [&](const boost::system::error_code& ec,
+                   const boost::asio::ip::udp::endpoint& ep) {
                 resolved = true;
                 CHECK_FALSE(ec.failed());
                 CHECK(ep.port() > 0);

@@ -20,19 +20,21 @@ using namespace logging;
 heos_client::heos_client(
     std::string_view log_name,
     boost::asio::io_context& io,
-    std::string host,
+    std::string device_label,
     std::string port,
-    line_handler handler)
+    line_handler handler,
+    boost::asio::ip::udp::endpoint ssdp_endpoint)
   : log_name_{log_name}
   , strand_(boost::asio::make_strand(io))
+  , ssdp_resolver_(io, std::move(ssdp_endpoint))
   , resolver_(io)
   , socket_(io)
   , reconnect_timer_(io)
-  , host_(std::move(host))
+  , device_label_(std::move(device_label))
   , port_(std::move(port))
   , handler_(std::move(handler))
 {
-    info("[{}] created for {}:{}", log_name_, host_, port_);
+    info("[{}] created for device '{}' (port {})", log_name_, device_label_, port_);
 }
 
 void heos_client::start() {
@@ -42,7 +44,7 @@ void heos_client::start() {
         }
         started_ = true;
         stopping_ = false;
-        initiate_connect();
+        initiate_resolve();
     });
 }
 
@@ -66,6 +68,33 @@ void heos_client::set_reconnect_backoff(std::chrono::steady_clock::duration base
         reconnect_base_ = base;
         reconnect_max_ = max;
     });
+}
+
+void heos_client::initiate_resolve() {
+    if (stopping_) {
+        return;
+    }
+
+    info("[{}]: SSDP resolving '{}'", log_name_, device_label_);
+    ssdp_resolver_.async_resolve(
+        "urn:schemas-denon-com:device:ACT-Denon:1",
+        boost::asio::bind_executor(
+            strand_,
+            [this](const boost::system::error_code& ec,
+                   const boost::asio::ip::udp::endpoint& endpoint) {
+                if (stopping_) {
+                    return;
+                }
+                if (ec) {
+                    error("[{}]: SSDP resolve error: {}", log_name_, ec.message());
+                    schedule_reconnect();
+                    return;
+                }
+
+                host_ = endpoint.address().to_string();
+                info("[{}]: SSDP resolved {} -> {}", log_name_, device_label_, host_);
+                initiate_connect();
+            }));
 }
 
 void heos_client::initiate_connect() {
@@ -92,7 +121,7 @@ void heos_client::initiate_connect() {
             }));
 }
 
-void heos_client::initiate_connect(boost::asio::ip::tcp::resolver::results_type results) {
+void heos_client::initiate_connect(boost::asio::ip::tcp::resolver::results_type&& results) {
     if (stopping_) {
         return;
     }
@@ -158,19 +187,19 @@ void heos_client::schedule_reconnect() {
         return;
     }
     reconnect_attempts_ = std::min<std::size_t>(reconnect_attempts_ + 1, 32);
-    auto exponent = std::min<std::size_t>(reconnect_attempts_, max_backoff_exponent_);
+    auto exponent = std::min<std::size_t>(reconnect_attempts_, max_backoff_exponent);
     auto multiplier = std::size_t{1} << exponent;
     auto delay = reconnect_base_ * multiplier;
     if (delay > reconnect_max_) {
         delay = reconnect_max_;
     }
 
-    info("[{}]: reconnect in {}", log_name_, delay);
+    info("[{}]: retry in {}", log_name_, delay);
     reconnect_timer_.expires_after(delay);
     reconnect_timer_.async_wait(boost::asio::bind_executor(
         strand_, [this](const boost::system::error_code& ec) {
             if (!ec) {
-                initiate_connect();
+                initiate_resolve();
             }
         }));
 }
