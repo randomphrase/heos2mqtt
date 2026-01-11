@@ -2,12 +2,28 @@
   "name": "heos2mqtt",
   "version-string": "0.1.0",
   "description": "Service that bridges HEOS CLI output to MQTT.",
+  "builtin-baseline": "64e1fbee7d9f40eab5d112aaff648c4dcffe9e47",
   "dependencies": [
-    "boost-asio",
-    "boost-json",
-    "boost-mqtt5",
-    "fmt",
-    "catch2"
+    {
+      "name": "boost-asio",
+      "version>=": "1.90.0"
+    },
+    {
+      "name": "boost-json",
+      "version>=": "1.90.0"
+    },
+    {
+      "name": "boost-mqtt5",
+      "version>=": "1.90.0"
+    },
+    {
+      "name": "fmt",
+      "version>=": "12.1.0"
+    },
+    {
+      "name": "catch2",
+      "version>=": "3.11.0"
+    }
   ],
   "features": {
     "stacktrace-backtrace": {
@@ -15,7 +31,8 @@
       "dependencies": [
         {
           "name": "boost-stacktrace",
-          "features": ["backtrace"]
+          "features": ["backtrace"],
+          "version>=": "1.90.0"
         }
       ]
     },
@@ -24,7 +41,8 @@
       "dependencies": [
         {
           "name": "boost-stacktrace",
-          "default-features": false
+          "default-features": false,
+          "version>=": "1.90.0"
         }
       ]
     }
