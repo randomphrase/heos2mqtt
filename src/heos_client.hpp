@@ -6,6 +6,7 @@
 
 #include <chrono>
 #include <functional>
+#include <optional>
 #include <string>
 #include <string_view>
 
@@ -21,7 +22,7 @@ public:
         std::string_view log_name,
         boost::asio::io_context& io,
         std::string device_label,
-        std::string port,
+        boost::asio::ip::port_type port,
         line_handler handler,
         boost::asio::ip::udp::endpoint ssdp_endpoint = default_ssdp_endpoint);
 
@@ -44,8 +45,8 @@ private:
     boost::asio::streambuf read_buffer_;
     boost::asio::steady_timer reconnect_timer_;
     std::string device_label_;
-    std::string host_;
-    std::string port_;
+    std::optional<boost::asio::ip::address> host_;
+    boost::asio::ip::port_type port_;
     line_handler handler_;
     bool started_{false};
     bool stopping_{false};

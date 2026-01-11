@@ -11,6 +11,7 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdint>
+#include <fmt/ostream.h>
 #include <string_view>
 
 namespace heos2mqtt {
@@ -22,7 +23,7 @@ heos_client::heos_client(
     std::string_view log_name,
     boost::asio::io_context& io,
     std::string device_label,
-    std::string port,
+    boost::asio::ip::port_type port,
     line_handler handler,
     boost::asio::ip::udp::endpoint ssdp_endpoint)
   : log_name_{log_name}
@@ -31,7 +32,7 @@ heos_client::heos_client(
   , socket_(io)
   , reconnect_timer_(io)
   , device_label_(std::move(device_label))
-  , port_(std::move(port))
+  , port_(port)
   , handler_(std::move(handler))
 {
     info("[{}] created for device '{}' (port {})", log_name_, device_label_, port_);
@@ -91,8 +92,8 @@ void heos_client::initiate_resolve() {
                     return;
                 }
 
-                host_ = address.to_string();
-                info("[{}]: SSDP resolved {} -> {}", log_name_, device_label_, host_);
+                host_ = address;
+                info("[{}]: SSDP resolved {} -> {}", log_name_, device_label_, fmt::streamed(address));
                 initiate_connect();
             }));
 }
@@ -102,25 +103,13 @@ void heos_client::initiate_connect() {
         return;
     }
 
-    info("[{}]: connecting to {}:{}", log_name_, host_, port_);
-    boost::system::error_code parse_ec;
-    auto address = boost::asio::ip::make_address(host_, parse_ec);
-    if (parse_ec) {
-        error("[{}]: invalid address {} ({})", log_name_, host_, parse_ec.message());
+    if (!host_) {
+        error("[{}]: missing resolved address before connect", log_name_);
         schedule_reconnect();
         return;
     }
-
-    std::uint16_t port_value = 0;
-    try {
-        port_value = static_cast<std::uint16_t>(std::stoul(port_));
-    } catch (const std::exception& ex) {
-        error("[{}]: invalid port {} ({})", log_name_, port_, ex.what());
-        schedule_reconnect();
-        return;
-    }
-
-    boost::asio::ip::tcp::endpoint endpoint(address, port_value);
+    info("[{}]: connecting to {}:{}", log_name_, fmt::streamed(*host_), port_);
+    boost::asio::ip::tcp::endpoint endpoint(*host_, port_);
     boost::asio::async_connect(
         socket_, std::array<boost::asio::ip::tcp::endpoint, 1>{endpoint},
         boost::asio::bind_executor(
