@@ -10,6 +10,7 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstdint>
 #include <string_view>
 
 namespace heos2mqtt {
@@ -27,7 +28,6 @@ heos_client::heos_client(
   : log_name_{log_name}
   , strand_(boost::asio::make_strand(io))
   , ssdp_resolver_(io, std::move(ssdp_endpoint))
-  , resolver_(io)
   , socket_(io)
   , reconnect_timer_(io)
   , device_label_(std::move(device_label))
@@ -81,7 +81,7 @@ void heos_client::initiate_resolve() {
         boost::asio::bind_executor(
             strand_,
             [this](const boost::system::error_code& ec,
-                   const boost::asio::ip::udp::endpoint& endpoint) {
+                   const boost::asio::ip::address& address) {
                 if (stopping_) {
                     return;
                 }
@@ -91,7 +91,7 @@ void heos_client::initiate_resolve() {
                     return;
                 }
 
-                host_ = endpoint.address().to_string();
+                host_ = address.to_string();
                 info("[{}]: SSDP resolved {} -> {}", log_name_, device_label_, host_);
                 initiate_connect();
             }));
@@ -102,33 +102,27 @@ void heos_client::initiate_connect() {
         return;
     }
 
-    info("[{}]: resolving {}:{}", log_name_, host_, port_);
-    resolver_.async_resolve(
-        host_, port_,
-        boost::asio::bind_executor(
-            strand_, [this](const boost::system::error_code& ec,
-                            boost::asio::ip::tcp::resolver::results_type results) {
-                if (stopping_) {
-                    return;
-                }
-                if (ec) {
-                    error("[{}]: resolve error: {}", log_name_, ec.message());
-                    schedule_reconnect();
-                    return;
-                }
-
-                initiate_connect(std::move(results));
-            }));
-}
-
-void heos_client::initiate_connect(boost::asio::ip::tcp::resolver::results_type&& results) {
-    if (stopping_) {
+    info("[{}]: connecting to {}:{}", log_name_, host_, port_);
+    boost::system::error_code parse_ec;
+    auto address = boost::asio::ip::make_address(host_, parse_ec);
+    if (parse_ec) {
+        error("[{}]: invalid address {} ({})", log_name_, host_, parse_ec.message());
+        schedule_reconnect();
         return;
     }
 
-    info("[{}]: connecting...", log_name_);
+    std::uint16_t port_value = 0;
+    try {
+        port_value = static_cast<std::uint16_t>(std::stoul(port_));
+    } catch (const std::exception& ex) {
+        error("[{}]: invalid port {} ({})", log_name_, port_, ex.what());
+        schedule_reconnect();
+        return;
+    }
+
+    boost::asio::ip::tcp::endpoint endpoint(address, port_value);
     boost::asio::async_connect(
-        socket_, std::move(results),
+        socket_, std::array<boost::asio::ip::tcp::endpoint, 1>{endpoint},
         boost::asio::bind_executor(
             strand_,
             [this](const boost::system::error_code& connect_ec,

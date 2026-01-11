@@ -1,5 +1,7 @@
 #pragma once
 
+#include "logging/logging.hpp"
+
 #include <boost/asio/any_completion_handler.hpp>
 #include <boost/asio/async_result.hpp>
 #include <boost/asio/bind_allocator.hpp>
@@ -9,6 +11,7 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/asio/strand.hpp>
+#include <boost/beast/http.hpp>
 
 #include <array>
 #include <chrono>
@@ -20,6 +23,8 @@
 namespace heos2mqtt {
 
 namespace net = boost::asio;
+namespace http = boost::beast::http;
+using namespace logging;
 
 inline const net::ip::udp::endpoint default_ssdp_endpoint(
     net::ip::make_address("239.255.255.250"), static_cast<net::ip::port_type>(1900));
@@ -28,7 +33,7 @@ class ssdp_resolver {
 public:
     using udp = net::ip::udp;
     using completion_handler_type =
-        net::any_completion_handler<void(boost::system::error_code, udp::endpoint)>;
+        net::any_completion_handler<void(boost::system::error_code, net::ip::address)>;
 
     static constexpr std::chrono::seconds default_timeout {3};
 
@@ -43,7 +48,7 @@ public:
         outbound_interface_ = std::move(iface);
     }
 
-    template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
+    template <net::completion_token_for<void(boost::system::error_code, net::ip::address)> CompletionToken>
     auto async_resolve(std::string_view search_target,
         std::chrono::steady_clock::duration timeout,
         CompletionToken&& token) // NOLINT(cppcoreguidelines-missing-std-forward)
@@ -51,10 +56,10 @@ public:
         auto initiation = [this, search_target = std::string(search_target), timeout](auto&& handler) mutable {
           this->begin_resolve(std::move(search_target), timeout, std::forward<decltype(handler)>(handler));
         };
-        return net::async_initiate<CompletionToken, void(boost::system::error_code, udp::endpoint)>(initiation, token);
+        return net::async_initiate<CompletionToken, void(boost::system::error_code, net::ip::address)>(initiation, token);
     }
 
-    template <net::completion_token_for<void(boost::system::error_code, udp::endpoint)> CompletionToken>
+    template <net::completion_token_for<void(boost::system::error_code, net::ip::address)> CompletionToken>
     auto async_resolve(std::string_view search_target, CompletionToken&& token) {
       return async_resolve(search_target, default_timeout, std::forward<CompletionToken>(token));
     }
@@ -68,7 +73,7 @@ private:
     void schedule_receive();
     void handle_receive(const boost::system::error_code& ec, std::size_t bytes);
     void handle_timeout(const boost::system::error_code& ec);
-    void finish(const boost::system::error_code& ec, udp::endpoint endpoint);
+    void finish(const boost::system::error_code& ec, net::ip::address address);
     bool response_matches(std::string_view payload) const;
 
     net::strand<net::io_context::executor_type> strand_;
@@ -98,7 +103,7 @@ void ssdp_resolver::begin_resolve(std::string&& search_target,
                 auto handler = std::move(completion);
                 net::post(strand_, [handler = std::move(handler), ec]() mutable {
                     if (handler) {
-                        handler(ec, udp::endpoint{});
+                        handler(ec, net::ip::address{});
                     }
                 });
                 return;
@@ -125,6 +130,11 @@ void ssdp_resolver::begin_resolve(std::string&& search_target,
             request_.append("\r\nMAN: \"ssdp:discover\"\r\nMX: 2\r\nST: ");
             request_.append(search_target_);
             request_.append("\r\n\r\n");
+
+            debug("SSDP: sending search to {}:{} (ST: {})",
+                target_endpoint_.address().to_string(),
+                target_endpoint_.port(),
+                search_target_);
 
             socket_.open(target_endpoint_.protocol());
             socket_.set_option(net::socket_base::reuse_address(true));
@@ -163,15 +173,19 @@ inline void ssdp_resolver::schedule_receive() {
 
 inline void ssdp_resolver::handle_receive(const boost::system::error_code& ec, std::size_t bytes) {
     if (ec) {
+        logging::warning("SSDP: receive error: {}", ec.message());
         finish(ec, {});
         return;
     }
 
     std::string_view payload(buffer_.data(), bytes);
+    debug("SSDP: received {} bytes from {}", bytes, sender_.address().to_string());
     if (response_matches(payload)) {
-        finish({}, sender_);
+        info("SSDP: matched response from {}", sender_.address().to_string());
+        finish({}, sender_.address());
         return;
     }
+    debug("SSDP: response did not match search target");
     schedule_receive();
 }
 
@@ -179,10 +193,11 @@ inline void ssdp_resolver::handle_timeout(const boost::system::error_code& ec) {
     if (ec == net::error::operation_aborted) {
         return;
     }
+    warning("SSDP: discovery timed out");
     finish(make_error_code(net::error::timed_out), {});
 }
 
-inline void ssdp_resolver::finish(const boost::system::error_code& ec, udp::endpoint endpoint) {
+inline void ssdp_resolver::finish(const boost::system::error_code& ec, net::ip::address address) {
     if (!resolving_) {
         return;
     }
@@ -193,37 +208,46 @@ inline void ssdp_resolver::finish(const boost::system::error_code& ec, udp::endp
 
     auto handler = std::move(handler_);
     handler_ = {};
-    net::post(strand_, [handler = std::move(handler), ec, endpoint]() mutable {
+    net::post(strand_, [handler = std::move(handler), ec, address]() mutable {
         if (handler) {
-            handler(ec, endpoint);
+            handler(ec, address);
         }
     });
 }
 
 inline bool ssdp_resolver::response_matches(std::string_view payload) const {
-    if (payload.find("HTTP/1.1 200") == std::string_view::npos) {
+    http::response_parser<http::string_body> parser;
+    parser.eager(true);
+    parser.skip(true);
+
+    boost::system::error_code ec;
+    parser.put(net::buffer(payload.data(), payload.size()), ec);
+    if (ec && ec != http::error::need_more) {
+        debug("SSDP: parse error: {}", ec.message());
+        return false;
+    }
+    if (!parser.is_header_done()) {
+        debug("SSDP: incomplete response headers");
         return false;
     }
 
-    auto st_pos = payload.find("\r\nST:");
-    if (st_pos == std::string_view::npos) {
-        st_pos = payload.find("\nST:");
-    }
-    if (st_pos != std::string_view::npos) {
-        auto value_start = payload.find(':', st_pos);
-        if (value_start == std::string_view::npos) {
-            return false;
-        }
-        value_start += 1;
-        while (value_start < payload.size() && payload[value_start] == ' ') {
-            value_start += 1;
-        }
-        auto value_end = payload.find_first_of("\r\n", value_start);
-        auto value = payload.substr(value_start, value_end - value_start);
-        return value == search_target_;
+    const auto& response = parser.get();
+    if (response.result() != http::status::ok) {
+        debug("SSDP: non-OK response {}", response.result_int());
+        return false;
     }
 
-    return payload.find(search_target_) != std::string_view::npos;
+    auto st = response.find("ST");
+    if (st == response.end()) {
+        debug("SSDP: missing ST header");
+        return false;
+    }
+
+    if (st->value() != search_target_) {
+        debug("SSDP: ST mismatch (got '{}')", st->value());
+        return false;
+    }
+    return true;
 }
 
 }  // namespace heos2mqtt

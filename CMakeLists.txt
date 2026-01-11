@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
-find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5)
+find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5 beast)
 find_package(Boost 1.90 QUIET COMPONENTS stacktrace_backtrace stacktrace_basic stacktrace_from_exception)
 add_library(Boost::stacktrace INTERFACE IMPORTED)
 if(TARGET Boost::stacktrace_backtrace)
@@ -80,6 +80,7 @@ target_link_libraries(heos_client
     PUBLIC
         asio
         Boost::headers
+        Boost::beast
         logging
         fmt::fmt
         Threads::Threads
