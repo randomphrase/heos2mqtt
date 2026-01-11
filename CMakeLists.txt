@@ -45,6 +45,7 @@ target_link_libraries(asio PUBLIC Boost::headers)
 target_compile_definitions(asio PUBLIC
     BOOST_ASIO_NO_DEPRECATED
     BOOST_ASIO_SEPARATE_COMPILATION
+    BOOST_BEAST_SEPARATE_COMPILATION
 )
 
 # On linux, we require liburing to enable io_uring support in asio
