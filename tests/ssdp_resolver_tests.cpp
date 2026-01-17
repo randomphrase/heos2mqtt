@@ -1,6 +1,6 @@
-#include "expect_calls.hpp"
-#include "run_until.hpp"
-#include "ssdp_responder.hpp"
+#include "astest/expect_calls.hpp"
+#include "astest/run_until.hpp"
+#include "ssdp/test/ssdp_responder.hpp"
 #include "ssdp_resolver.hpp"
 
 #include <boost/asio.hpp>

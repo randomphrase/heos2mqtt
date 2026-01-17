@@ -1,7 +1,7 @@
 #include "heos_client.hpp"
 
-#include "run_until.hpp"
-#include "ssdp_responder.hpp"
+#include "astest/run_until.hpp"
+#include "ssdp/test/ssdp_responder.hpp"
 
 #include <boost/asio.hpp>
 #include <catch2/catch_test_macros.hpp>
