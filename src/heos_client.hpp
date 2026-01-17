@@ -18,7 +18,7 @@ class heos_client {
 public:
     using tcp = boost::asio::ip::tcp;
 
-    using line_handler = std::function<void(std::string)>;
+    using line_handler = std::function<void(std::string&&)>;
 
     heos_client(
         std::string_view log_name,

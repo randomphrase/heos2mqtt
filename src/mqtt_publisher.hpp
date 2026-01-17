@@ -4,6 +4,7 @@
 #include <boost/json.hpp>
 #include <boost/mqtt5/mqtt_client.hpp>
 
+#include <cstdint>
 #include <optional>
 #include <string>
 
@@ -37,7 +38,7 @@ class mqtt_publisher {
 public:
     mqtt_publisher(boost::asio::io_context& io,
                    std::string host,
-                   std::string port,
+                   uint16_t port,
                    std::string base_topic);
 
     void start();
@@ -55,12 +56,11 @@ private:
     void handle_connack(mqtt::reason_code rc, bool session_present, const mqtt::connack_props& props);
     void handle_disconnect_notice(mqtt::reason_code rc, const mqtt::disconnect_props& props);
     void handle_transport_error(mqtt::error_code ec);
-    [[nodiscard]] std::uint16_t default_port() const;
     [[nodiscard]] std::string build_topic(const std::string& suffix) const;
 
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
     std::string host_;
-    std::string port_;
+    uint16_t port_;
     std::string base_topic_;
     std::string client_id_;
     boost::asio::steady_timer reconnect_timer_;

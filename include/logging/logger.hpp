@@ -20,7 +20,7 @@ public:
     logger(severity min_level, log_destination_ptr&& default_dest,
         std::initializer_list<std::pair<severity, log_destination_ptr>> level_dests = {});
     logger(const logger&) = default;
-    logger& operator=(const logger&) = default;
+    logger& operator=(const logger&) noexcept = default;
     logger(logger&&) noexcept = default;
     logger& operator=(logger&&) noexcept = default;
     ~logger() = default;
