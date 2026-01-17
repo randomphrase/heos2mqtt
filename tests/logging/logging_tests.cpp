@@ -95,3 +95,22 @@ TEST_CASE("logging routes by severity destination", "[logging]") {
 
     CHECK(error_output.find("err 3") != std::string::npos);
 }
+
+TEST_CASE("logging set_min_level filters destinations", "[logging]") {
+    log_capture capture;
+    auto destination = capture.destination();
+    logging::logger logger_instance(logging::severity::debug, std::move(destination));
+    scoped_logger_override guard(std::move(logger_instance));
+
+    logging::info("before {}", 1);
+    auto before_output = capture.str();
+    CHECK(before_output.find("before 1") != std::string::npos);
+
+    logging::logger::get_default().set_min_level(logging::severity::warning);
+    logging::info("after {}", 2);
+    logging::warning("warn {}", 3);
+
+    auto after_output = capture.str();
+    CHECK(after_output.find("after 2") == std::string::npos);
+    CHECK(after_output.find("warn 3") != std::string::npos);
+}
