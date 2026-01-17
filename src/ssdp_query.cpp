@@ -1,4 +1,4 @@
-#include "logging/logging.hpp"
+#include "logging/logger.hpp"
 #include "ssdp/ssdp_resolver.hpp"
 
 #include <boost/asio/io_context.hpp>
