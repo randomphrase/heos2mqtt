@@ -2,12 +2,15 @@
 #include "mqtt_publisher.hpp"
 
 #include <boost/asio.hpp>
+
 #include <fmt/core.h>
+#include <fmt/ostream.h>
+
+#include <lyra/lyra.hpp>
 
 #include <csignal>
 #include <cstdlib>
 #include <string>
-#include <string_view>
 #include <utility>
 
 namespace {
@@ -20,50 +23,39 @@ struct options {
     std::string base_topic{"heos"};
 };
 
-void print_usage(const char* name) {
-    fmt::print(
-        "Usage: {} [--heos-host HOST] [--heos-port PORT] [--mqtt-host HOST] "
-        "[--mqtt-port PORT] [--base-topic TOPIC]\n",
-        name);
-}
-
-options parse_args(int argc, char** argv) {
+options parse_args(int argc, const char** argv) {
     options opts;
-    for (int i = 1; i < argc; ++i) {
-        std::string_view arg{argv[i]};
-        auto pop_value = [&](std::string& target) {
-            if (i + 1 >= argc) {
-                print_usage(argv[0]);
-                std::exit(EXIT_FAILURE);
-            }
-            target = argv[++i];
-        };
+    bool show_help = false;
 
-        if (arg == "--heos-host") {
-            pop_value(opts.heos_host);
-        } else if (arg == "--heos-port") {
-            pop_value(opts.heos_port);
-        } else if (arg == "--mqtt-host") {
-            pop_value(opts.mqtt_host);
-        } else if (arg == "--mqtt-port") {
-            pop_value(opts.mqtt_port);
-        } else if (arg == "--base-topic") {
-            pop_value(opts.base_topic);
-        } else if (arg == "--help" || arg == "-h") {
-            print_usage(argv[0]);
-            std::exit(EXIT_SUCCESS);
-        } else {
-            fmt::print(stderr, "Unknown argument: {}\n", arg);
-            print_usage(argv[0]);
-            std::exit(EXIT_FAILURE);
-        }
+    auto cli = lyra::cli()
+        | lyra::help(show_help)
+        | lyra::opt(opts.heos_host, "host").help("HEOS host address").optional()
+            ["--heos-host"]
+        | lyra::opt(opts.heos_port, "port").help("HEOS port").optional()
+            ["--heos-port"]
+        | lyra::opt(opts.mqtt_host, "host").help("MQTT host address").optional()
+            ["--mqtt-host"]
+        | lyra::opt(opts.mqtt_port, "port").help("MQTT port").optional()
+            ["--mqtt-port"]
+        | lyra::opt(opts.base_topic, "topic").help("MQTT base topic").optional()
+            ["--base-topic"];
+
+    auto result = cli.parse({argc, argv});
+    if (!result) {
+        fmt::print(stderr, "Error: {}\n", result.message());
+        fmt::print(stderr, "{}\n", fmt::streamed(cli));
+        std::exit(EXIT_FAILURE);
+    }
+    if (show_help) {
+        fmt::print("{}\n", fmt::streamed(cli));
+        std::exit(EXIT_SUCCESS);
     }
     return opts;
 }
 
 }  // namespace
 
-int main(int argc, char** argv) {
+int main(int argc, const char** argv) {
     auto opts = parse_args(argc, argv);
 
     boost::asio::io_context io;

@@ -164,7 +164,7 @@ target_link_libraries(mqtt_publisher
 )
 
 add_executable(heos2mqtt
-    src/main.cpp
+    src/heos2mqtt.cpp
 )
 target_link_libraries(heos2mqtt PRIVATE heos_client mqtt_publisher)
 
