@@ -59,16 +59,16 @@ void detail::mqtt_logger::at_transport_error(mqtt::error_code ec) {
 }
 
 mqtt_publisher::mqtt_publisher(boost::asio::io_context& io,
-                               std::string host,
-                               std::string port,
-                               std::string base_topic)
-    : strand_(boost::asio::make_strand(io)),
-      host_(std::move(host)),
-      port_(std::move(port)),
-      base_topic_(std::move(base_topic)),
-      client_id_(fmt::format("heos2mqtt-{}", random_id())),
-      reconnect_timer_(io),
-      client_(io, std::monostate{}, detail::mqtt_logger(*this))
+    std::string host,
+    uint16_t port,
+    std::string base_topic)
+: strand_(boost::asio::make_strand(io))
+  , host_(std::move(host))
+  , port_(port)
+  , base_topic_(std::move(base_topic))
+  , client_id_(fmt::format("heos2mqtt-{}", random_id()))
+  , reconnect_timer_(io)
+  , client_(io, std::monostate{}, detail::mqtt_logger(*this))
 {}
 
 void mqtt_publisher::start() {
@@ -118,7 +118,7 @@ void mqtt_publisher::publish_raw(std::string line) {
             build_topic("raw"), std::move(serialized), mqtt::retain_e::no, props,
             boost::asio::bind_executor(
                 strand_,
-                [](mqtt::error_code ec, mqtt::reason_code rc, mqtt::puback_props) {
+                [](mqtt::error_code ec, mqtt::reason_code rc, const mqtt::puback_props&) {
                     if (ec) {
                         fmt::print(stderr, "MQTT: publish error: {} ({})\n", ec.message(), rc.message());
                     }
@@ -127,7 +127,7 @@ void mqtt_publisher::publish_raw(std::string line) {
 }
 
 void mqtt_publisher::ensure_client() {
-    client_.brokers(fmt::format("{}:{}", host_, port_), default_port());
+    client_.brokers(fmt::format("{}:{}", host_, port_), port_);
     client_.credentials(client_id_);
     client_.keep_alive(30);
 }
@@ -204,14 +204,6 @@ void mqtt_publisher::handle_transport_error(mqtt::error_code ec) {
         connected_ = false;
         fmt::print(stderr, "MQTT: transport error: {}\n", ec.message());
     });
-}
-
-std::uint16_t mqtt_publisher::default_port() const {
-    auto value = std::stoi(port_);
-    if (value >= 0 && value <= std::numeric_limits<std::uint16_t>::max()) {
-        return static_cast<std::uint16_t>(value);
-    }
-    return 1883;
 }
 
 std::string mqtt_publisher::build_topic(const std::string& suffix) const {

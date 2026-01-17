@@ -22,7 +22,7 @@ public:
     scoped_logger_override &operator=(scoped_logger_override &&) = delete;
 
     ~scoped_logger_override() {
-        logging::logger::get_default() = saved_;
+        logging::logger::get_default() = std::move(saved_);
     }
 
 private:

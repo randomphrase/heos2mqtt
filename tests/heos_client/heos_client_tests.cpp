@@ -103,7 +103,7 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
     boost::asio::io_context io;
 
     mock_heos_server server(io, 0);
-    server.enqueue({{"line1", "line2", "line3"}, false});
+    server.enqueue({.lines_={"line1", "line2", "line3"}, .close_after_=false});
     server.start();
 
     std::vector<std::string> received;
@@ -138,8 +138,8 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
     boost::asio::io_context io;
 
     mock_heos_server server(io, 0);
-    server.enqueue({{"first"}, true});
-    server.enqueue({{"second"}, false});
+    server.enqueue({.lines_={"first"}, .close_after_=true});
+    server.enqueue({.lines_={"second"}, .close_after_=false});
     server.start();
 
     std::vector<std::string> received;
@@ -184,7 +184,7 @@ TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
     ssdp::test::ssdp_responder responder(io);
 
     heos2mqtt::heos_client client("test_client", io, std::string(device_name), server.port(),
-                                  [](std::string) {}, responder.endpoint());
+                                  [](std::string_view) {}, responder.endpoint());
 
     client.set_reconnect_backoff(50ms, 200ms);
     client.start();
@@ -211,7 +211,7 @@ TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]
     boost::asio::io_context io;
 
     mock_heos_server server(io, 0);
-    server.enqueue({{"line1"}, false});
+    server.enqueue({.lines_={"line1"}, .close_after_=false});
     server.start();
 
     std::vector<std::string> received;
@@ -220,7 +220,7 @@ TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]
 
     heos2mqtt::heos_client client("test_client",
         io, std::string(device_name), server.port(),
-        [&](std::string line) { received.push_back(std::move(line)); },
+        [&](std::string_view line) { received.emplace_back(line); },
         responder.endpoint());
 
     client.set_reconnect_backoff(10ms, 50ms);

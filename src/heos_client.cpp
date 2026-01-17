@@ -158,7 +158,7 @@ void heos_client::start_read() {
                 }
 
                 if (handler_) {
-                    handler_(line);
+                    handler_(std::move(line));
                 }
 
                 start_read();
