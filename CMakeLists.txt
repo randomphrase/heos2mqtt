@@ -64,7 +64,7 @@ add_library(logging STATIC
     src/logging/logging.cpp
 )
 target_include_directories(logging PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(logging PUBLIC fmt::fmt)
