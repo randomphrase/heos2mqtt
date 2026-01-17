@@ -12,7 +12,8 @@
 
 using namespace std::chrono_literals;
 
-int main(int argc, const char** argv) {
+int main(int argc, const char** argv)
+try {
     std::string query;
     bool show_help = false;
 
@@ -50,4 +51,8 @@ int main(int argc, const char** argv) {
 
     io.run();
     return exit_code;
+
+} catch (const std::exception& ex) {
+    fmt::print(stderr, "Unhandled exception: {}\n", ex.what());
+    return 1;
 }
