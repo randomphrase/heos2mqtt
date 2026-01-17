@@ -233,6 +233,8 @@ inline bool ssdp_resolver::response_matches(std::string_view payload) const {
         return false;
     }
 
+    debug("Parsed SSDP response:\n{}", fmt::streamed(parser.get()));
+
     const auto& response = parser.get();
     if (response.result() != http::status::ok) {
         debug("SSDP: non-OK response {}", response.result_int());
@@ -249,6 +251,7 @@ inline bool ssdp_resolver::response_matches(std::string_view payload) const {
         debug("SSDP: ST mismatch (got '{}')", st->value());
         return false;
     }
+
     return true;
 }
 
