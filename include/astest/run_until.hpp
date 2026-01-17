@@ -5,7 +5,7 @@
 #include <chrono>
 #include <thread>
 
-namespace test {
+namespace astest {
 
 using namespace std::chrono_literals;
 
@@ -51,4 +51,4 @@ inline void run_remaining(boost::asio::io_context& io) {
     run_for(io, remaining_timeout);
 }
 
-}  // namespace test
+}  // namespace astest

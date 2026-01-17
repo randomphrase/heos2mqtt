@@ -9,14 +9,13 @@
 
 #include <fmt/ostream.h>
 
-#include <chrono>
 #include <array>
 #include <optional>
 #include <string>
 #include <string_view>
 #include <system_error>
 
-namespace test {
+namespace ssdp::test {
 
 using namespace logging;
 
@@ -48,7 +47,7 @@ public:
         return socket_.local_endpoint();
     }
 
-    request expect_request(clock_type::duration timeout = default_timeout) {
+    request expect_request(astest::clock_type::duration timeout = astest::default_timeout) {
         std::optional<request> received;
 
         socket_.async_receive_from(
@@ -66,7 +65,7 @@ public:
                 received.emplace(std::string(buffer_.data(), bytes), sender_);
             });
 
-        test::run_until(io_, [&]() {
+        astest::run_until(io_, [&]() {
             return received.has_value();
         }, timeout);
 
@@ -92,4 +91,4 @@ private:
     std::array<char, 2048> buffer_{};
 };
 
-}  // namespace test
+}  // namespace ssdp::test

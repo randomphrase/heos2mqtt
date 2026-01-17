@@ -12,6 +12,8 @@
 
 namespace heos2mqtt {
 
+
+
 class heos_client {
 public:
     using tcp = boost::asio::ip::tcp;
@@ -24,7 +26,7 @@ public:
         std::string device_label,
         boost::asio::ip::port_type port,
         line_handler handler,
-        boost::asio::ip::udp::endpoint ssdp_endpoint = default_ssdp_endpoint);
+        boost::asio::ip::udp::endpoint ssdp_endpoint = ssdp::default_ssdp_endpoint);
 
     void start();
     void stop();
@@ -40,7 +42,7 @@ private:
 
     std::string log_name_;
     boost::asio::strand<boost::asio::io_context::executor_type> strand_;
-    ssdp_resolver ssdp_resolver_;
+    ssdp::ssdp_resolver ssdp_resolver_;
     tcp::socket socket_;
     boost::asio::streambuf read_buffer_;
     boost::asio::steady_timer reconnect_timer_;

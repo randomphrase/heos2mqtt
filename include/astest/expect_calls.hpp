@@ -6,7 +6,7 @@
 #include <memory>
 #include <source_location>
 
-namespace test {
+namespace astest {
 
 class call_count_checker {
 
@@ -76,6 +76,6 @@ auto expect_calls(unsigned expected, callable_t&& callable, const std::source_lo
     return decorated_callable<call_count_checker, callable_t>{
         {expected, location},
         std::forward<callable_t>(callable)};
-}
+}  // namespace astest
 
 }

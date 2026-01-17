@@ -22,7 +22,7 @@
 #include <string_view>
 #include <utility>
 
-namespace heos2mqtt {
+namespace ssdp {
 
 namespace net = boost::asio;
 namespace http = boost::beast::http;
@@ -175,7 +175,7 @@ inline void ssdp_resolver::schedule_receive() {
 
 inline void ssdp_resolver::handle_receive(const boost::system::error_code& ec, std::size_t bytes) {
     if (ec) {
-        logging::warning("SSDP: receive error: {}", ec.message());
+        warning("SSDP: receive error: {}", ec.message());
         finish(ec, {});
         return;
     }
@@ -252,4 +252,4 @@ inline bool ssdp_resolver::response_matches(std::string_view payload) const {
     return true;
 }
 
-}  // namespace heos2mqtt
+}  // namespace ssdp

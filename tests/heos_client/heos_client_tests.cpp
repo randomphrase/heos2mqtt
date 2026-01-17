@@ -108,7 +108,7 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
 
     std::vector<std::string> received;
     constexpr std::string_view device_name = "living_room";
-    test::ssdp_responder responder(io);
+    ssdp::test::ssdp_responder responder(io);
 
     heos2mqtt::heos_client client("test_client",
         io, std::string(device_name), server.port(),
@@ -123,7 +123,7 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
         heos_ssdp_response,
         req.sender_);
 
-    test::run_until(io, [&]() {
+    astest::run_until(io, [&]() {
         return received.size() == 3;
     });
 
@@ -131,7 +131,7 @@ TEST_CASE("heos_client streams lines in order", "[heos-client]") {
 
     client.stop();
     server.stop();
-    test::run_for(io, 200ms);
+    astest::run_for(io, 200ms);
 }
 
 TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
@@ -144,7 +144,7 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
 
     std::vector<std::string> received;
     constexpr std::string_view device_name = "living_room";
-    test::ssdp_responder responder(io);
+    ssdp::test::ssdp_responder responder(io);
 
     heos2mqtt::heos_client client("test_client",
         io, std::string(device_name), server.port(),
@@ -163,7 +163,7 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
         heos_ssdp_response,
         req2.sender_);
 
-    test::run_until(io, [&]() {
+    astest::run_until(io, [&]() {
         return received.size() == 2;
     });
 
@@ -171,7 +171,7 @@ TEST_CASE("heos_client reconnects after disconnect", "[heos-client]") {
 
     client.stop();
     server.stop();
-    test::run_remaining(io);
+    astest::run_remaining(io);
 }
 
 TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
@@ -181,7 +181,7 @@ TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
     server.start();
 
     constexpr std::string_view device_name = "living_room";
-    test::ssdp_responder responder(io);
+    ssdp::test::ssdp_responder responder(io);
 
     heos2mqtt::heos_client client("test_client", io, std::string(device_name), server.port(),
                                   [](std::string) {}, responder.endpoint());
@@ -194,17 +194,17 @@ TEST_CASE("heos_client stop is idempotent", "[heos-client]") {
         heos_ssdp_response,
         req.sender_);
 
-    test::run_for(io, 200ms);
+    astest::run_for(io, 200ms);
 
     client.stop();
     client.stop();
 
     server.stop();
-    test::run_for(io, 200ms);
+    astest::run_for(io, 200ms);
 
     SUCCEED("Stop completed without deadlock");
 
-    test::run_remaining(io);
+    astest::run_remaining(io);
 }
 
 TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]") {
@@ -216,7 +216,7 @@ TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]
 
     std::vector<std::string> received;
     constexpr std::string_view device_name = "living_room";
-    test::ssdp_responder responder(io);
+    ssdp::test::ssdp_responder responder(io);
 
     heos2mqtt::heos_client client("test_client",
         io, std::string(device_name), server.port(),
@@ -235,7 +235,7 @@ TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]
         heos_ssdp_response,
         req2.sender_);
 
-    test::run_until(io, [&]() {
+    astest::run_until(io, [&]() {
         return received.size() == 1;
     });
 
@@ -243,5 +243,5 @@ TEST_CASE("heos_client retries after non-matching SSDP response", "[heos-client]
 
     client.stop();
     server.stop();
-    test::run_remaining(io);
+    astest::run_remaining(io);
 }
