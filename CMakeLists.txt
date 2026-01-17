@@ -86,7 +86,10 @@ target_compile_definitions(astest INTERFACE BOOST_STACKTRACE_GNU_SOURCE_NOT_REQU
 # logging
 
 add_library(logging STATIC
-    src/logging/logging.cpp
+    src/logging/logger.cpp
+    src/logging/severity.cpp
+    src/logging/log_record.cpp
+    src/logging/log_destination.cpp
 )
 target_include_directories(logging PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
