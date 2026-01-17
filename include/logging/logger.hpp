@@ -41,6 +41,8 @@ public:
         return level_destinations_[static_cast<std::size_t>(Level)];
     }
 
+    void set_min_level(severity min_level);
+
 private:
     std::array<log_destination*, max_enum_value(severity{}) + 1> level_destinations_{};
     std::vector<log_destination_ptr> destinations_;

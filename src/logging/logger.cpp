@@ -19,18 +19,23 @@ logger::logger(severity min_level,
     std::initializer_list<std::pair<severity, log_destination_ptr>> level_dests)
 {
     destinations_.push_back(std::move(default_dest));
-    for (auto& dest : level_destinations_) {
-        const auto level = static_cast<severity>(
-            std::distance(level_destinations_.begin(), &dest));
-        if (level < min_level) {
-            continue;
-        }
-        dest = destinations_.back().get();
-    }
+    set_min_level(min_level);
 
     for (auto&& [level, dest] : level_dests) {
         destinations_.push_back(dest);
         level_destinations_.at(static_cast<std::size_t>(level)) = destinations_.back().get();
+    }
+}
+
+void logger::set_min_level(severity min_level) {
+    for (auto& dest : level_destinations_) {
+        const auto level = static_cast<severity>(
+            std::distance(level_destinations_.begin(), &dest));
+        if (level < min_level) {
+            dest = nullptr;
+            continue;
+        }
+        dest = destinations_.empty() ? nullptr : destinations_.back().get();
     }
 }
 
