@@ -1,3 +1,4 @@
+#include "logging/logging.hpp"
 #include "ssdp/ssdp_resolver.hpp"
 
 #include <boost/asio/io_context.hpp>
@@ -19,7 +20,12 @@ try {
 
     auto cli = lyra::cli()
         | lyra::help(show_help)
-        | lyra::arg(query, "st").required().help("SSDP search target");
+        | lyra::opt([] (bool) {
+            logging::logger::get_default().set_min_level(logging::severity::debug);
+          }).help("Enable verbose logging")
+          ["-v"]["--verbose"]
+        | lyra::arg(query, "st").required().help("SSDP search target")
+    ;
 
     auto result = cli.parse({argc, argv});
     if (!result) {

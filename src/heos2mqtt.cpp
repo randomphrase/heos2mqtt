@@ -1,4 +1,5 @@
 #include "heos_client.hpp"
+#include "logging/logging.hpp"
 #include "mqtt_publisher.hpp"
 
 #include <boost/asio.hpp>
@@ -26,6 +27,7 @@ struct options {
 options parse_args(int argc, const char** argv) {
     options opts;
     bool show_help = false;
+    bool verbose = false;
 
     auto cli = lyra::cli()
         | lyra::help(show_help)
@@ -38,7 +40,9 @@ options parse_args(int argc, const char** argv) {
         | lyra::opt(opts.mqtt_port, "port").help("MQTT port").optional()
             ["--mqtt-port"]
         | lyra::opt(opts.base_topic, "topic").help("MQTT base topic").optional()
-            ["--base-topic"];
+            ["--base-topic"]
+        | lyra::opt(verbose).help("Enable verbose logging").optional()
+            ["-v"]["--verbose"];
 
     auto result = cli.parse({argc, argv});
     if (!result) {
@@ -49,6 +53,9 @@ options parse_args(int argc, const char** argv) {
     if (show_help) {
         fmt::print("{}\n", fmt::streamed(cli));
         std::exit(EXIT_SUCCESS);
+    }
+    if (verbose) {
+        logging::logger::get_default().set_min_level(logging::severity::debug);
     }
     return opts;
 }
