@@ -33,18 +33,8 @@ namespace fmt {
 template <> struct formatter<logging::severity>: formatter<string_view> {
     using base = formatter<string_view>;
 
-    constexpr auto format(logging::severity s, format_context& ctx) const
-    -> format_context::iterator {
-        using enum logging::severity;
-        switch (s) {
-        case debug: return base::format("DBG", ctx);
-        case info: return base::format("INF", ctx);
-        case warning: return base::format("WRN", ctx);
-        case error: return base::format("ERR", ctx);
-        }
-        __builtin_unreachable();
-        //std::unreachable();
-    }
+    auto format(logging::severity s, format_context& ctx) const
+        -> format_context::iterator;
 };
 
 }
