@@ -32,7 +32,7 @@ int main(int argc, const char** argv) {
     }
 
     boost::asio::io_context io;
-    heos2mqtt::ssdp_resolver resolver(io);
+    ssdp::ssdp_resolver resolver(io);
     int exit_code = 1;
 
     resolver.async_resolve(

@@ -14,13 +14,13 @@ using Catch::Matchers::ContainsSubstring;
 
 TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
     boost::asio::io_context io;
-    test::ssdp_responder responder(io);
-    heos2mqtt::ssdp_resolver resolver(io, responder.endpoint());
+    ssdp::test::ssdp_responder responder(io);
+    ssdp::ssdp_resolver resolver(io, responder.endpoint());
 
     bool resolved = false;
     resolver.async_resolve(
         "urn:schemas-denon-com:device:ACT-Denon:1", 1s,
-        test::expect_calls(
+        astest::expect_calls(
             1, [&](const boost::system::error_code& ec,
                    const boost::asio::ip::address& address) {
                 resolved = true;
@@ -34,7 +34,7 @@ TEST_CASE("ssdp_resolver receives multicast response", "[ssdp]") {
     const std::string_view response =
         "HTTP/1.1 200 OK\r\nST: urn:schemas-denon-com:device:ACT-Denon:1\r\n\r\n";
     responder.send_response(response, req.sender_);
-    test::run_until(io, [&]() { return resolved; });
+    astest::run_until(io, [&]() { return resolved; });
 
-    test::run_remaining(io);
+    astest::run_remaining(io);
 }
