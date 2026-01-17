@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ssdp_resolver.hpp"
+#include "ssdp/ssdp_resolver.hpp"
 
 #include <boost/asio.hpp>
 

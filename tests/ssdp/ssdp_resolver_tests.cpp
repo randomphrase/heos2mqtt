@@ -1,7 +1,7 @@
 #include "astest/expect_calls.hpp"
 #include "astest/run_until.hpp"
 #include "ssdp/test/ssdp_responder.hpp"
-#include "ssdp_resolver.hpp"
+#include "ssdp/ssdp_resolver.hpp"
 
 #include <boost/asio.hpp>
 #include <catch2/catch_test_macros.hpp>
