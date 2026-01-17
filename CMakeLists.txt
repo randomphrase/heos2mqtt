@@ -68,17 +68,36 @@ target_include_directories(logging PUBLIC
     $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(logging PUBLIC fmt::fmt)
+
+add_library(ssdp INTERFACE)
+target_include_directories(ssdp INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(ssdp INTERFACE
+    Boost::headers
+    Boost::beast
+    logging
+)
 add_executable(logging_tests
     tests/logging_tests.cpp
 )
-add_library(test_support INTERFACE)
-target_sources(test_support INTERFACE tests/catch_exception_stacktrace.cpp)
-target_link_libraries(test_support INTERFACE Boost::stacktrace)
+add_library(astest INTERFACE)
+target_sources(astest INTERFACE tests/catch_exception_stacktrace.cpp)
+target_include_directories(astest INTERFACE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<INSTALL_INTERFACE:include>
+)
+target_link_libraries(astest INTERFACE
+    Boost::stacktrace
+    logging
+)
 
 target_link_libraries(logging_tests PRIVATE
   logging
   Catch2::Catch2WithMain
-  test_support
+  astest
 )
 
 
@@ -93,7 +112,7 @@ target_link_libraries(heos_client
     PUBLIC
         asio
         Boost::headers
-        Boost::beast
+        ssdp
         logging
         fmt::fmt
         Threads::Threads
@@ -131,8 +150,8 @@ target_link_libraries(heos_client_tests
         heos_client
         Catch2::Catch2WithMain
         Boost::headers
-        logging
-        test_support
+        ssdp
+        astest
 )
 target_compile_definitions(heos_client_tests PRIVATE BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED)
 
