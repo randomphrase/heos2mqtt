@@ -1,6 +1,19 @@
 version: 2
-updates:
-  - package-ecosystem: "vcpkg"
-    directory: "/" # Location of your vcpkg.json file
+
+multi-ecosystem-groups:
+  vcpkg-and-submodule:
     schedule:
       interval: "weekly"
+
+updates:
+  - package-ecosystem: "vcpkg"
+    directory: "/"
+    multi-ecosystem-group: "vcpkg-and-submodule"
+    patterns:
+      - "*"
+
+  - package-ecosystem: "gitsubmodule"
+    directory: "/"
+    multi-ecosystem-group: "vcpkg-and-submodule"
+    patterns:
+      - "*"
