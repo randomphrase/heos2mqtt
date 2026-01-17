@@ -38,7 +38,7 @@ jobs:
 
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
-      CXXFLAGS: -Wall -Wextra -Wpedantic ${{ matrix.cxxflags }}
+      CXXFLAGS: -Wall -Wextra -Wpedantic -Wsign-compare ${{ matrix.cxxflags }}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
