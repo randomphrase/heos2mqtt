@@ -39,6 +39,7 @@ else()
 endif()
 
 find_package(fmt CONFIG REQUIRED)
+find_package(lyra CONFIG REQUIRED)
 
 find_package(Catch2 CONFIG REQUIRED)
 include(Catch)
@@ -166,6 +167,16 @@ add_executable(heos2mqtt
     src/main.cpp
 )
 target_link_libraries(heos2mqtt PRIVATE heos_client mqtt_publisher)
+
+add_executable(ssdp_query
+    src/ssdp_query.cpp
+)
+target_link_libraries(ssdp_query PRIVATE
+    asio
+    ssdp
+    bfg::lyra
+    fmt::fmt
+)
 
 add_executable(heos_tests
     tests/heos_client/heos_client_tests.cpp
