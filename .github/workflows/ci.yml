@@ -73,10 +73,10 @@ jobs:
         # TODO above fork contains fix for ARM, use jwlawson/actions-setup-cmake once merged
 
       - name: Dashboard Build
-        uses: chorse-dev/cmake-action@master
+        uses: randomphrase/cmake-action@master
         with:
           build-name: ${{ matrix.name }}
-          # change-id: ${{ steps.checkout.outputs.commit }}
+          change-id: ${{ steps.checkout.outputs.commit }}
           config-options: ${{ matrix.config-options }}
           coverage-command: ${{ matrix.coverage-command }}
           cmake-generator: ${{ matrix.generator || 'Ninja' }}
