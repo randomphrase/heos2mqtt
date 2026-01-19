@@ -1,16 +1,12 @@
-cmake_minimum_required(VERSION 3.24)
-if(POLICY CMP0167)
-    cmake_policy(SET CMP0167 NEW)
-endif()
+cmake_minimum_required(VERSION 4.1)
 
 project(heos2mqtt VERSION 0.1.0 LANGUAGES CXX)
 
 include(CTest)
 
+# TODO: is this the best way to set the default language standard?
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 
 find_package(Threads REQUIRED)
 
@@ -18,27 +14,23 @@ find_package(Boost 1.90 REQUIRED COMPONENTS json mqtt5 beast)
 find_package(Boost 1.90 QUIET COMPONENTS stacktrace_backtrace stacktrace_basic stacktrace_from_exception)
 add_library(Boost::stacktrace INTERFACE IMPORTED)
 if(TARGET Boost::stacktrace_backtrace)
+    message(STATUS "Boost stacktrace backend: backtrace")
     target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_backtrace)
 elseif(TARGET Boost::stacktrace_basic)
-    target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_basic)
-endif()
-if(TARGET Boost::stacktrace_from_exception)
-    target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_from_exception)
-endif()
-if(TARGET Boost::stacktrace_backtrace)
-    message(STATUS "Boost stacktrace backend: backtrace")
-elseif(TARGET Boost::stacktrace_basic)
     message(STATUS "Boost stacktrace backend: basic")
+    target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_basic)
 else()
     message(STATUS "Boost stacktrace backend: none")
 endif()
 if(TARGET Boost::stacktrace_from_exception)
     message(STATUS "Boost stacktrace_from_exception: available")
+    target_link_libraries(Boost::stacktrace INTERFACE Boost::stacktrace_from_exception)
 else()
     message(STATUS "Boost stacktrace_from_exception: unavailable")
 endif()
 
 find_package(fmt CONFIG REQUIRED)
+
 find_package(lyra CONFIG REQUIRED)
 
 find_package(Catch2 CONFIG REQUIRED)
