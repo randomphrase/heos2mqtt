@@ -36,9 +36,16 @@ jobs:
             config-options: -DCMAKE_CXX_CLANG_TIDY=clang-tidy
             dependencies: clang
 
+          - name: Coverage
+            runs-on: ubuntu-24.04
+            cxxflags: --coverage
+            ldflags: --coverage
+            coverage-command: gcov
+
     env:
       CMAKE_TOOLCHAIN_FILE: "./external/vcpkg/scripts/buildsystems/vcpkg.cmake"
       CXXFLAGS: -Wall -Wextra -Wpedantic -Wsign-compare ${{ matrix.cxxflags }}
+      LDFLAGS: ${{ matrix.ldflags }}
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
