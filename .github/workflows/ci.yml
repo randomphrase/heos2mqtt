@@ -73,7 +73,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y ninja-build g++ liburing-dev ${{ matrix.dependencies }}
+          sudo apt-get install -y ninja-build g++ ${{ matrix.dependencies }}
 
       - name: Setup CMake
         uses: tomjakubowski/actions-setup-cmake@aarch64
