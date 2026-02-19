@@ -18,8 +18,8 @@ public:
     }
     scoped_logger_override(const scoped_logger_override &) = delete;
     scoped_logger_override(scoped_logger_override &&) = delete;
-    scoped_logger_override &operator=(const scoped_logger_override &) = delete;
-    scoped_logger_override &operator=(scoped_logger_override &&) = delete;
+    auto operator=(const scoped_logger_override &) -> scoped_logger_override & = delete;
+    auto operator=(scoped_logger_override &&) -> scoped_logger_override & = delete;
 
     ~scoped_logger_override() {
         logging::logger::get_default() = std::move(saved_);
@@ -34,11 +34,11 @@ public:
     log_capture()
         : stream_(&buffer_) {}
 
-    std::shared_ptr<logging::log_destination_ostream> destination() {
+    auto destination() -> std::shared_ptr<logging::log_destination_ostream> {
         return std::make_shared<logging::log_destination_ostream>(stream_);
     }
 
-    std::string str() const {
+    auto str() const -> std::string {
         return buffer_.str();
     }
 

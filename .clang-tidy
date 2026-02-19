@@ -6,7 +6,6 @@ Checks: >
   modernize-*,
   cppcoreguidelines-*,
   -cppcoreguidelines-avoid-magic-numbers,
-  -modernize-use-trailing-return-type,
   -readability-function-cognitive-complexity,
   -readability-magic-numbers,
   -readability-identifier-length,

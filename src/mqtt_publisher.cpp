@@ -15,7 +15,7 @@ using namespace std::chrono_literals;
 
 namespace {
 
-std::string random_id() {
+auto random_id() -> std::string {
     std::mt19937 rng{std::random_device{}()};
     std::uniform_int_distribution<int> dist(0, 15);
     std::ostringstream oss;
@@ -25,7 +25,7 @@ std::string random_id() {
     return oss.str();
 }
 
-std::string current_iso_timestamp() {
+auto current_iso_timestamp() -> std::string {
     auto now = std::chrono::system_clock::now();
     std::time_t t = std::chrono::system_clock::to_time_t(now);
     std::tm tm{};
@@ -72,7 +72,7 @@ mqtt_publisher::mqtt_publisher(boost::asio::io_context& io,
 {}
 
 void mqtt_publisher::start() {
-    boost::asio::dispatch(strand_, [this]() {
+    boost::asio::dispatch(strand_, [this]() -> void {
         if (running_) {
             return;
         }
@@ -86,7 +86,7 @@ void mqtt_publisher::start() {
 }
 
 void mqtt_publisher::stop() {
-    boost::asio::dispatch(strand_, [this]() {
+    boost::asio::dispatch(strand_, [this]() -> void {
         stopping_ = true;
         running_ = false;
         reconnect_timer_.cancel();
@@ -95,7 +95,7 @@ void mqtt_publisher::stop() {
             mqtt::disconnect_rc_e::normal_disconnection,
             mqtt::disconnect_props{},
             boost::asio::bind_executor(
-                strand_, [](mqtt::error_code ec) {
+                strand_, [](mqtt::error_code ec) -> void {
                 if (ec && ec != boost::asio::error::operation_aborted) {
                     fmt::print(stderr, "MQTT: disconnect error: {}\n", ec.message());
                 }
@@ -104,7 +104,7 @@ void mqtt_publisher::stop() {
 }
 
 void mqtt_publisher::publish_raw(std::string line) {
-    boost::asio::dispatch(strand_, [this, line = std::move(line)]() {
+    boost::asio::dispatch(strand_, [this, line = std::move(line)]() -> void {
         if (!connected_) {
             return;
         }
@@ -118,7 +118,7 @@ void mqtt_publisher::publish_raw(std::string line) {
             build_topic("raw"), std::move(serialized), mqtt::retain_e::no, props,
             boost::asio::bind_executor(
                 strand_,
-                [](mqtt::error_code ec, mqtt::reason_code rc, const mqtt::puback_props&) {
+                [](mqtt::error_code ec, mqtt::reason_code rc, const mqtt::puback_props&) -> void {
                     if (ec) {
                         fmt::print(stderr, "MQTT: publish error: {} ({})\n", ec.message(), rc.message());
                     }
@@ -135,7 +135,7 @@ void mqtt_publisher::ensure_client() {
 void mqtt_publisher::run_client() {
     fmt::print("MQTT: starting client run to {}:{}\n", host_, port_);
     client_.async_run(boost::asio::bind_executor(
-        strand_, [this](mqtt::error_code ec) { handle_run_complete(ec); }));
+        strand_, [this](mqtt::error_code ec) -> void { handle_run_complete(ec); }));
 }
 
 void mqtt_publisher::handle_run_complete(mqtt::error_code ec) {
@@ -160,7 +160,7 @@ void mqtt_publisher::schedule_restart() {
     fmt::print("MQTT: restarting in {}s\n", delay.count());
     reconnect_timer_.expires_after(delay);
     reconnect_timer_.async_wait(boost::asio::bind_executor(
-        strand_, [this](const boost::system::error_code& ec) {
+        strand_, [this](const boost::system::error_code& ec) -> void {
             if (!ec && running_) {
                 ensure_client();
                 run_client();
@@ -171,7 +171,7 @@ void mqtt_publisher::schedule_restart() {
 void mqtt_publisher::handle_connack(mqtt::reason_code rc,
                                     bool /*session_present*/,
                                     const mqtt::connack_props& /*props*/) {
-    boost::asio::dispatch(strand_, [this, rc]() {
+    boost::asio::dispatch(strand_, [this, rc]() -> void {
         if (!running_) {
             return;
         }
@@ -187,7 +187,7 @@ void mqtt_publisher::handle_connack(mqtt::reason_code rc,
 
 void mqtt_publisher::handle_disconnect_notice(mqtt::reason_code rc,
                                               const mqtt::disconnect_props& /*props*/) {
-    boost::asio::dispatch(strand_, [this, rc]() {
+    boost::asio::dispatch(strand_, [this, rc]() -> void {
         if (stopping_) {
             return;
         }
@@ -197,7 +197,7 @@ void mqtt_publisher::handle_disconnect_notice(mqtt::reason_code rc,
 }
 
 void mqtt_publisher::handle_transport_error(mqtt::error_code ec) {
-    boost::asio::dispatch(strand_, [this, ec]() {
+    boost::asio::dispatch(strand_, [this, ec]() -> void {
         if (stopping_) {
             return;
         }
@@ -206,7 +206,7 @@ void mqtt_publisher::handle_transport_error(mqtt::error_code ec) {
     });
 }
 
-std::string mqtt_publisher::build_topic(const std::string& suffix) const {
+auto mqtt_publisher::build_topic(const std::string& suffix) const -> std::string {
     if (base_topic_.empty()) {
         return suffix;
     }

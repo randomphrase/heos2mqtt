@@ -13,7 +13,7 @@
 
 using namespace std::chrono_literals;
 
-int main(int argc, const char** argv)
+auto main(int argc, const char** argv) -> int
 try {
     std::string query;
     bool show_help = false;

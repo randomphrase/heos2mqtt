@@ -39,7 +39,7 @@ heos_client::heos_client(
 }
 
 void heos_client::start() {
-    boost::asio::dispatch(strand_, [this]() {
+    boost::asio::dispatch(strand_, [this]() -> void {
         if (started_) {
             return;
         }
@@ -50,7 +50,7 @@ void heos_client::start() {
 }
 
 void heos_client::stop() {
-    boost::asio::dispatch(strand_, [this]() {
+    boost::asio::dispatch(strand_, [this]() -> void {
         stopping_ = true;
         reconnect_timer_.cancel();
         close_socket();
@@ -65,7 +65,7 @@ void heos_client::set_reconnect_backoff(std::chrono::steady_clock::duration base
     if (max < base) {
         max = base;
     }
-    boost::asio::dispatch(strand_, [this, base, max]() {
+    boost::asio::dispatch(strand_, [this, base, max]() -> void {
         reconnect_base_ = base;
         reconnect_max_ = max;
     });
@@ -82,7 +82,7 @@ void heos_client::initiate_resolve() {
         boost::asio::bind_executor(
             strand_,
             [this](const boost::system::error_code& ec,
-                   const boost::asio::ip::address& address) {
+                   const boost::asio::ip::address& address) -> void {
                 if (stopping_) {
                     return;
                 }
@@ -115,7 +115,7 @@ void heos_client::initiate_connect() {
         boost::asio::bind_executor(
             strand_,
             [this](const boost::system::error_code& connect_ec,
-                   const boost::asio::ip::tcp::endpoint&) {
+                   const boost::asio::ip::tcp::endpoint&) -> void {
                 if (stopping_) {
                     return;
                 }
@@ -135,7 +135,7 @@ void heos_client::start_read() {
     boost::asio::async_read_until(
         socket_, read_buffer_, '\n',
         boost::asio::bind_executor(
-            strand_, [this](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) {
+            strand_, [this](const boost::system::error_code& ec, std::size_t /*bytes_transferred*/) -> void {
                 if (stopping_) {
                     return;
                 }
@@ -180,7 +180,7 @@ void heos_client::schedule_reconnect() {
     info("[{}]: retry in {}", log_name_, delay);
     reconnect_timer_.expires_after(delay);
     reconnect_timer_.async_wait(boost::asio::bind_executor(
-        strand_, [this](const boost::system::error_code& ec) {
+        strand_, [this](const boost::system::error_code& ec) -> void {
             if (!ec) {
                 initiate_resolve();
             }

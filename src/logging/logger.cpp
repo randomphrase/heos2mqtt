@@ -8,7 +8,7 @@
 
 namespace logging {
 
-thread_local std::string logger::buffer_ = [] {
+thread_local std::string logger::buffer_ = [] () -> std::string {
     std::string buf;
     buf.reserve(1024);
     return buf;
@@ -39,7 +39,7 @@ void logger::set_min_level(severity min_level) {
     }
 }
 
-logger& logger::get_default() {
+auto logger::get_default() -> logger& {
     static logger instance{
         severity::info,
         std::make_shared<log_destination_ostream>(std::clog),
@@ -49,7 +49,7 @@ logger& logger::get_default() {
     return instance;
 }
 
-logger& logger::get_instance(const std::source_location& /*location*/) {
+auto logger::get_instance(const std::source_location& /*location*/) -> logger& {
     // TODO use location to create per-module loggers
     return get_default();
 }

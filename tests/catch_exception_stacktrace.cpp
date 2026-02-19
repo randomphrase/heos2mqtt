@@ -8,7 +8,7 @@
 
 namespace {
 
-[[maybe_unused]] const bool stacktrace_capture_enabled = []() {
+[[maybe_unused]] const bool stacktrace_capture_enabled = [] () -> bool {
     boost::stacktrace::this_thread::set_capture_stacktraces_at_throw(true);
     return true;
 }();
