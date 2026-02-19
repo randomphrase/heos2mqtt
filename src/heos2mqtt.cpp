@@ -63,7 +63,7 @@ options parse_args(int argc, const char** argv) {
 
 }  // namespace
 
-int main(int argc, const char** argv)
+auto main(int argc, const char** argv) -> int
 try {
     auto opts = parse_args(argc, argv);
 

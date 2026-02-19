@@ -38,7 +38,7 @@ public:
         batches_.push_back(std::move(batch_item));
     }
 
-    [[nodiscard]] std::uint16_t port() const {
+    [[nodiscard]] auto port() const -> std::uint16_t {
         return acceptor_.local_endpoint().port();
     }
 
@@ -54,7 +54,7 @@ public:
 
 private:
     void accept_next() {
-        acceptor_.async_accept([this](const boost::system::error_code& ec, boost::asio::ip::tcp::socket socket) {
+        acceptor_.async_accept([this](const boost::system::error_code& ec, boost::asio::ip::tcp::socket socket) -> void {
             if (ec) {
                 return;
             }
@@ -83,7 +83,7 @@ private:
         auto line = batch_item->lines_[batch_item->index_++] + "\r\n";
         boost::asio::async_write(
             socket_, boost::asio::buffer(line),
-            [this, batch_item](const boost::system::error_code& ec, std::size_t /*bytes*/) {
+            [this, batch_item](const boost::system::error_code& ec, std::size_t /*bytes*/) -> void {
                 if (ec) {
                     accept_next();
                     return;

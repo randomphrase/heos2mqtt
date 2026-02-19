@@ -13,23 +13,23 @@ log_record::log_record(severity level,
   , location_(location)
 {}
 
-severity log_record::level() const {
+auto log_record::level() const -> severity {
     return level_;
 }
 
-clock::time_point log_record::timestamp() const {
+auto log_record::timestamp() const -> clock::time_point {
     return timestamp_;
 }
 
-std::string_view log_record::message() const {
+auto log_record::message() const -> std::string_view {
     return message_;
 }
 
-const std::source_location& log_record::location() const {
+auto log_record::location() const -> const std::source_location& {
     return location_;
 }
 
-std::string_view log_record::source_file() const {
+auto log_record::source_file() const -> std::string_view {
     std::string_view file = location_.file_name();
     if (auto pos = file.find_last_of(std::filesystem::path::preferred_separator); pos != std::string_view::npos) {
         file.remove_prefix(pos + 1);
