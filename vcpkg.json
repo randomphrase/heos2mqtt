@@ -2,11 +2,11 @@
   "name": "heos2mqtt",
   "version-string": "0.1.0",
   "description": "Service that bridges HEOS CLI output to MQTT.",
-  "builtin-baseline": "66c0373dc7fca549e5803087b9487edfe3aca0a1",
+  "builtin-baseline": "62159a45e18f3a9ac0548628dcaf74fcb60c6ff9",
   "dependencies": [
     {
       "name": "liburing",
-      "version>=": "2.13",
+      "version>=": "2.14",
       "platform": "linux"
     },
     {
@@ -44,7 +44,9 @@
       "dependencies": [
         {
           "name": "boost-stacktrace",
-          "features": ["backtrace"],
+          "features": [
+            "backtrace"
+          ],
           "version>=": "1.90.0"
         }
       ]
